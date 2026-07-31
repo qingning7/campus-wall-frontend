@@ -49,6 +49,16 @@ export async function getMe() {
   })
 }
 
+export async function bindMySchool(schoolId: string) {
+    return apiRequest<AuthUser>('/api/auth/me/school', {
+        method: 'PATCH',
+        auth: true,
+        body: {
+            schoolId
+        }
+    })
+}
+
 export function logout() {
   clearAuthToken()
 }
