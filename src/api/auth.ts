@@ -18,6 +18,7 @@ export type RegisterInput = {
   password: string
   name?: string
   schoolId?: string
+  emailCode: string
 }
 
 export type LoginResult = {
