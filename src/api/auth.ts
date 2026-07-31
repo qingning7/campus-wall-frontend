@@ -1,0 +1,54 @@
+import { apiRequest, clearAuthToken, saveAuthToken } from '../lib/api'
+
+export type AuthUser = {
+  id: string
+  email: string
+  name: string | null
+  schoolId: string | null
+  createdAt: string
+}
+
+export type LoginInput = {
+  email: string
+  password: string
+}
+
+export type RegisterInput = {
+  email: string
+  password: string
+  name?: string
+  schoolId?: string
+}
+
+export type LoginResult = {
+  token: string
+  user: AuthUser
+}
+
+export async function login(input: LoginInput) {
+    const result = await apiRequest<LoginResult>('/api/auth/login', {
+        method: "POST",
+        body: input
+    })
+
+    saveAuthToken(result.token)
+
+    return result
+}
+
+export async function register(input: RegisterInput) {
+  return apiRequest<AuthUser>('/api/auth/register', {
+    method: 'POST',
+    body: input,
+  })
+}
+
+export async function getMe() {
+  return apiRequest<AuthUser>('/api/auth/me', {
+    auth: true,
+  })
+}
+
+export function logout() {
+  clearAuthToken()
+}
