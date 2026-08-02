@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { login, register, type AuthUser } from '../api/auth'
+import { login, register, sendEmailCode, type AuthUser } from '../api/auth'
 
 type AuthMode = 'choice' | 'login' | 'register'
 
@@ -15,6 +15,8 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
     const [emailCode, setEmailCode] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [notice, setNotice] = useState('')
+    const [sendingCode, setSendingCode] = useState(false)
 
     const isRegister = mode === 'register'
 
@@ -27,6 +29,28 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
                 </div>
             </section>
         )
+    }
+
+    async function handleSendEmailCode() {
+        setError('')
+        setNotice('')
+
+        if (!email.trim()) {
+            setError('请输入邮箱')
+            return
+        }
+
+        setSendingCode(true)
+
+        try {
+            const result = await sendEmailCode(email)
+
+            setNotice(`验证码已发送，验证码为：${result.devCode}`) // 开发模式
+        } catch (error) {
+            setError(error instanceof Error ? error.message : '发送验证码失败')
+        } finally {
+            setSendingCode(false)
+        }
     }
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -70,10 +94,8 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
                         邮箱验证码
                         <div className='emailcode'>
                             <input value={emailCode} onChange={(event) => setEmailCode(event.target.value)} required/>
-                            <button type='button' onClick={() => {
-                                console.log('验证码已发送')
-                            }}>
-                                发送验证码
+                            <button type='button' onClick={handleSendEmailCode} disabled={sendingCode}>
+                                {sendingCode ? '发送中...' : '发送验证码'}
                             </button>
                         </div>
                     </label>
@@ -86,6 +108,7 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
                 <label>密码<input type='password' value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required/></label>
 
                 {error && <p className='autherror'>{error}</p>}
+                {notice && <p className='authnotice'>{notice}</p>}
 
                 <button type='submit' disabled={loading}>
                     {loading ? '处理中...' : isRegister ? '注册并登录' : '登录'}

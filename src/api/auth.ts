@@ -21,6 +21,11 @@ export type RegisterInput = {
   emailCode: string
 }
 
+export type SendEmailCodeResult = {
+    message: string
+    devCode: string
+}
+
 export type LoginResult = {
   token: string
   user: AuthUser
@@ -42,6 +47,15 @@ export async function register(input: RegisterInput) {
     method: 'POST',
     body: input,
   })
+}
+
+export async function sendEmailCode(email: string) {
+    return apiRequest<SendEmailCodeResult>('/api/auth/email-code', {
+        method: 'POST',
+        body: {
+            email
+        }
+    })
 }
 
 export async function getMe() {
