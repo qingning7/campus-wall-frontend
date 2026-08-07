@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { login, register, sendEmailCode, type AuthUser } from '../api/auth'
 
@@ -24,8 +25,12 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
         return (
             <section className='auth'>
                 <div className='authform'>
-                    <button type='button' onClick={() => setMode('login')}>已有账号，去登陆</button>
-                    <button type='button' onClick={() => setMode('register')}>没有账号，去注册</button>
+                    <Button variant='outline' onClick={() => setMode('login')}>
+                        已有账号，去登陆
+                    </Button>
+                    <Button variant='outline' onClick={() => setMode('register')}>
+                        没有账号，去注册
+                    </Button>
                 </div>
             </section>
         )
@@ -94,9 +99,9 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
                         邮箱验证码
                         <div className='emailcode'>
                             <input value={emailCode} onChange={(event) => setEmailCode(event.target.value)} required/>
-                            <button type='button' onClick={handleSendEmailCode} disabled={sendingCode}>
+                            <Button onClick={handleSendEmailCode} disabled={sendingCode}>
                                 {sendingCode ? '发送中...' : '发送验证码'}
-                            </button>
+                            </Button>
                         </div>
                     </label>
                 )}
@@ -110,16 +115,16 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
                 {error && <p className='autherror'>{error}</p>}
                 {notice && <p className='authnotice'>{notice}</p>}
 
-                <button type='submit' disabled={loading}>
+                <Button type='submit' disabled={loading}>
                     {loading ? '处理中...' : isRegister ? '注册并登录' : '登录'}
-                </button>
+                </Button>
 
-                <button type='button' className='authswitch' onClick={() => {
+                <Button variant='outline' onClick={() => {
                     setError('')
                     setMode('choice')
                 }}>
                     返回
-                </button>
+                </Button>
             </form>
         </section>
     )
