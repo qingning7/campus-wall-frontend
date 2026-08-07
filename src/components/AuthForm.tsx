@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useState } from 'react'
 import { login, register, sendEmailCode, type AuthUser } from '../api/auth'
 
@@ -114,45 +115,51 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
                         </h1>
                     </div>
 
-                    <label>
+                    <label className="grid gap-2 text-left text-sm font-medium">
                         邮箱
-                        <input 
-                            className='h-11 w-full rounded-xl border border-input bg-background px-3 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/30'
-                            type='email' 
-                            value={email} 
-                            onChange={(event) => setEmail(event.target.value)} 
-                            required/>
+                        <Input
+                            type='email'
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            required
+                        />
                     </label>
 
                     {isRegister && (
-                        <label>
+                        <label className="grid gap-2 text-left text-sm font-medium">
                             邮箱验证码
-                            <div className='emailcode'>
-                                <input 
-                                className='h-11 w-full rounded-xl border border-input bg-background px-3 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/30'
-                                value={emailCode} 
-                                onChange={(event) => setEmailCode(event.target.value)} 
-                                required/>
-                                <Button onClick={handleSendEmailCode} disabled={sendingCode}>
+                            <div className='flex items-center gap-2'>
+                                <Input
+                                    className='h-11 w-full rounded-xl border border-input bg-background px-3 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/30'
+                                    value={emailCode} 
+                                    onChange={(event) => setEmailCode(event.target.value)} 
+                                    required/>
+                                <button 
+                                    type="button" 
+                                    onClick={handleSendEmailCode} 
+                                    disabled={sendingCode}
+                                    className='shrink-0 pb-2 text-sm font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50'
+                                >
                                     {sendingCode ? '发送中...' : '发送验证码'}
-                                </Button>
+                                </button>
                             </div>
                         </label>
                     )}
 
                     {isRegister && (
-                        <label>昵称
-                            <input 
-                                className='h-11 w-full rounded-xl border border-input bg-background px-3 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/30'
-                                value={name} 
-                                onChange={(event) => setName(event.target.value)} 
+                        <label className="grid gap-2 text-left text-sm font-medium">
+                            昵称
+                            <Input
+                                value={name}
+                                onChange={(event) => setName(event.target.value)}
                                 placeholder='输入昵称'
                             />
                         </label>
                     )}
 
-                    <label>密码
-                        <input 
+                    <label className="grid gap-2 text-left text-sm font-medium">
+                        密码
+                        <Input
                             className='h-11 w-full rounded-xl border border-input bg-background px-3 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/30'
                             type='password' 
                             value={password} 
@@ -164,16 +171,18 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
                     {error && <p className='autherror'>{error}</p>}
                     {notice && <p className='authnotice'>{notice}</p>}
 
-                    <Button type='submit' disabled={loading}>
-                        {loading ? '处理中...' : isRegister ? '注册并登录' : '登录'}
-                    </Button>
+                    <div>
+                        <Button type='submit' disabled={loading}>
+                            {loading ? '处理中...' : isRegister ? '注册并登录' : '登录'}
+                        </Button>
 
-                    <Button variant='outline' onClick={() => {
-                        setError('')
-                        setMode('choice')
-                    }}>
-                        返回
-                    </Button>
+                        <Button type='button' variant='outline' onClick={() => {
+                            setError('')
+                            setMode('choice')
+                        }}>
+                            返回
+                        </Button>
+                    </div>
                 </form>
             </section>
         </main>
