@@ -58,7 +58,7 @@ export function SchoolPicker({ onSelected }: SchoolPickerProps) {
   }
 
   const hasKeyword = search.trim().length > 0;
-  const shouldShowList = hasKeyword && !loading;
+  const shouldShowList = hasKeyword;
 
   return (
     <main className="min-h-screen bg-background px-6 py-10 text-foreground">
@@ -83,7 +83,11 @@ export function SchoolPicker({ onSelected }: SchoolPickerProps) {
 
                 {shouldShowList && (
                   <CommandList className="absolute top-full left-0 right-0 z-20 mt-3 max-h-72 overflow-y-auto rounded-2xl border border-border bg-card shadow-lg">
-                    {filteredSchools.length ? (
+                    {loading ? (
+                      <div className="px-4 py-3 text-sm text-muted-foreground">
+                        加载中...
+                      </div>
+                    ) : filteredSchools.length ? (
                       filteredSchools.map((school) => (
                         <CommandItem
                           key={school.id}
