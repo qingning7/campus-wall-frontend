@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { bindMySchool, type AuthUser } from "../api/auth";
+import { Navigate, useNavigate } from "react-router";
+import { useAuth } from "../contexts/AuthContext.tsx";
+import { bindMySchool } from "../api/auth";
 import { getSchools, type School } from "../api/school";
 import {
   Command,
-  CommandEmpty,
   CommandInput,
   CommandItem,
   CommandList,
@@ -20,11 +21,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
-type SchoolPickerProps = {
-  onSelected: (user: AuthUser) => void;
-};
+export function SchoolPage() {
+  const navigate = useNavigate();
+  const { currentUser, setCurrentUser } = useAuth();
 
-export function SchoolPicker({ onSelected }: SchoolPickerProps) {
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -59,6 +59,14 @@ export function SchoolPicker({ onSelected }: SchoolPickerProps) {
     return () => clearInterval(timer);
   }, [confirmOpen, countdown]);
 
+  if (!currentUser) {
+    return null;
+  }
+
+  if (currentUser.schoolId) {
+    return <Navigate to="/" replace />;
+  }
+
   function closeConfirmDialog() {
     setConfirmOpen(false);
     setPendingSchool(null);
@@ -85,7 +93,8 @@ export function SchoolPicker({ onSelected }: SchoolPickerProps) {
 
     try {
       const updatedUser = await bindMySchool(schoolId);
-      onSelected(updatedUser);
+      setCurrentUser(updatedUser);
+      navigate("/", { replace: true });
     } catch (error) {
       setError(error instanceof Error ? error.message : "绑定学校失败");
     } finally {
@@ -100,7 +109,12 @@ export function SchoolPicker({ onSelected }: SchoolPickerProps) {
     <main className="min-h-screen bg-background px-6 py-10 text-foreground">
       <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-xl flex-col items-center justify-center">
         <div className="w-full space-y-6">
-          <Button type="button" variant="ghost" className="mb-3 w-full">
+          <Button
+            type="button"
+            variant="ghost"
+            className="mb-3 w-full"
+            onClick={() => navigate("/")}
+          >
             暂时不绑定，先逛逛-{">"}
           </Button>
           <h1 className="text-center text-3xl font-semibold tracking-normal">
@@ -195,7 +209,10 @@ export function SchoolPicker({ onSelected }: SchoolPickerProps) {
             <button
               type="button"
               disabled={countdown > 0}
-              onClick={closeConfirmDialog}
+              onClick={() => {
+                closeConfirmDialog();
+                navigate("/");
+              }}
               className="w-full text-sm text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
               之后再选
