@@ -1,15 +1,15 @@
+import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { login, register, sendEmailCode, type AuthUser } from "../api/auth";
+import { login, register, sendEmailCode } from "../api/auth";
+import { useAuth } from "../contexts/AuthContext.tsx";
 
 type AuthMode = "choice" | "login" | "register";
 
-type AuthFormProps = {
-  onAuthed: (user: AuthUser) => void;
-};
+export function AuthPage() {
+  const { refreshUser } = useAuth();
 
-export function AuthForm({ onAuthed }: AuthFormProps) {
   const [mode, setMode] = useState<AuthMode>("choice");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -19,6 +19,8 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [sendingCode, setSendingCode] = useState(false);
+
+  const navigate = useNavigate();
 
   const isRegister = mode === "register";
 
@@ -91,12 +93,13 @@ export function AuthForm({ onAuthed }: AuthFormProps) {
         });
       }
 
-      const result = await login({
+      await login({
         email,
         password,
       });
 
-      onAuthed(result.user);
+      await refreshUser();
+      navigate("/", { replace: true });
     } catch (error) {
       setError(error instanceof Error ? error.message : "Request failed");
     } finally {
