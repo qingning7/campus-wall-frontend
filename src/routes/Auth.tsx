@@ -33,7 +33,7 @@ export function PublicOnlyRoute() {
   }
 
   if (currentUser) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={currentUser.schoolId ? "/" : "/school"} replace />;
   }
 
   return <Outlet />;
