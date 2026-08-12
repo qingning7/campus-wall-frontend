@@ -3,6 +3,7 @@ import { AuthPage } from "./pages/AuthPage";
 import { HomePage } from "./pages/HomePage";
 import { SchoolPage } from "./pages/SchoolPage";
 import { ProtectedRoute, PublicOnlyRoute } from "./routes/Auth";
+import { Workspace } from "./routes/Workspace";
 
 export const router = createBrowserRouter([
   {
@@ -18,8 +19,13 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        path: "/",
-        element: <HomePage />,
+        element: <Workspace />,
+        children: [
+          {
+            path: "/",
+            element: <HomePage />,
+          },
+        ],
       },
       {
         path: "/school",
