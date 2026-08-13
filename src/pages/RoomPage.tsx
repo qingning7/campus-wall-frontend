@@ -11,7 +11,8 @@ export function RoomPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageError, setMessageError] = useState("");
-  const [messageText, setMessageText] = useState("")
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     if (!roomId) {
@@ -51,7 +52,7 @@ export function RoomPage() {
   async function handleSendMessage(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!roomId) {
+    if (!roomId || sendingMessage) {
       return;
     }
 
@@ -61,10 +62,21 @@ export function RoomPage() {
       return;
     }
 
-    const sentMessage = await sendRoomMessage(roomId, { content });
+    setMessageText("");
+    setSendingMessage(true);
+    setMessageError("");
 
-    setMessages((prev) => [...prev, sentMessage]);
-    setMessageText("")
+    try {
+      const sentMessage = await sendRoomMessage(roomId, { content });
+
+      setMessages((prev) => [...prev, sentMessage]);
+      setMessageText("");
+    } catch (error) {
+      setMessageText(content);
+      setMessageError(error instanceof Error ? error.message : "发送消息失败");
+    } finally {
+      setSendingMessage(false);
+    }
   }
 
   return (
@@ -119,15 +131,15 @@ export function RoomPage() {
 
             <form className="border-t p-3" onSubmit={handleSendMessage}>
               <div className="flex gap-2">
-              <input
-              value={messageText}
-              onChange={(event) => setMessageText(event.target.value)}
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                placeholder="输入消息"
-              />
-              <Button type="submit" size="icon-sm">
-                发送
-              </Button>
+                <input
+                  value={messageText}
+                  onChange={(event) => setMessageText(event.target.value)}
+                  className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="输入消息"
+                />
+                <Button type="submit" size="icon-sm" disabled={sendingMessage}>
+                  发送
+                </Button>
               </div>
             </form>
           </>
