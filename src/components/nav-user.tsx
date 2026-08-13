@@ -22,6 +22,8 @@ import {
   BellIcon,
   LogOutIcon,
 } from "lucide-react";
+import { useNavigate } from "react-router";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function NavUser({
   user,
@@ -33,6 +35,13 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const navigate = useNavigate();
+  const { logoutAndClear } = useAuth();
+
+  function handleLogout() {
+    logoutAndClear();
+    navigate("/auth", { replace: true});
+  }
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -95,7 +104,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOutIcon />
               Log out
             </DropdownMenuItem>
