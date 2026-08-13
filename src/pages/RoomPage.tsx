@@ -1,9 +1,12 @@
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { useEffect, useState } from "react";
 import { PanelRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getRoomMessages, type ChatMessage } from "@/api/rooms";
 import { sendRoomMessage } from "@/api/rooms";
+import { useAuth } from "@/contexts/AuthContext";
+import { canAccessRoom } from "@/lib/room-access";
+import { getMyRooms } from "@/api/rooms";
 
 export function RoomPage() {
   const { roomId } = useParams();
@@ -13,9 +16,49 @@ export function RoomPage() {
   const [messageError, setMessageError] = useState("");
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const { currentUser } = useAuth();
+  const [checkingRoomAccess, setCheckingRoomAccess] = useState(true);
+  const [hasRoomAccess, setHasRoomAccess] = useState(false);
 
   useEffect(() => {
-    if (!roomId) {
+    if (!roomId || !currentUser) {
+      setCheckingRoomAccess(false);
+      setHasRoomAccess(false);
+      return;
+    }
+
+    let ignore = false;
+
+    async function checkRoomAccess() {
+      setCheckingRoomAccess(true);
+
+      try {
+        const rooms = await getMyRooms();
+        const allowed = canAccessRoom(roomId, currentUser, rooms);
+
+        if (!ignore) {
+          setHasRoomAccess(allowed);
+        }
+      } catch {
+        if (!ignore) {
+          setHasRoomAccess(false);
+        }
+      } finally {
+        if (!ignore) {
+          setCheckingRoomAccess(false);
+        }
+      }
+    }
+
+    void checkRoomAccess();
+
+    return () => {
+      ignore = true;
+    };
+  }, [roomId, currentUser]);
+
+  useEffect(() => {
+    if (!roomId || !hasRoomAccess) {
       return;
     }
 
@@ -47,7 +90,7 @@ export function RoomPage() {
     return () => {
       ignore = true;
     };
-  }, [roomId]);
+  }, [roomId, hasRoomAccess]);
 
   async function handleSendMessage(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -77,6 +120,24 @@ export function RoomPage() {
     } finally {
       setSendingMessage(false);
     }
+  }
+
+  if (checkingRoomAccess) {
+    return null;
+  }
+
+  if (!hasRoomAccess) {
+    return (
+      <main className="flex h-[calc(100svh-3.5rem)] items-center justify-center bg-background text-foreground">
+        <Link
+          to="/"
+          replace
+          className="text-sm text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline"
+        >
+          似乎来到了错误页面，点击回到首页
+        </Link>
+      </main>
+    );
   }
 
   return (
