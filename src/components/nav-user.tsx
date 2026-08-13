@@ -40,7 +40,7 @@ export function NavUser({
 
   function handleLogout() {
     logoutAndClear();
-    navigate("/auth", { replace: true});
+    navigate("/auth", { replace: true });
   }
   return (
     <SidebarMenu>
