@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "../contexts/AuthContext.tsx";
 
@@ -8,6 +8,12 @@ export function HomePage() {
 
   if (!currentUser) {
     return null;
+  }
+
+  const schoolRoomId = currentUser.school?.room?.id;
+
+  if (schoolRoomId) {
+    return <Navigate to={`/rooms/${schoolRoomId}`} replace />;
   }
 
   return (

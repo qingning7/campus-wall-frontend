@@ -88,14 +88,13 @@ export function AuthPage() {
       await login({
         email: normalizedEmail,
         password,
-      })
+      });
 
       await refreshUser();
 
       navigate(isRegister ? "/school" : "/", {
-        replace: true
-      })
-
+        replace: true,
+      });
     } catch (error) {
       setError(error instanceof Error ? error.message : "请求失败");
     } finally {
@@ -180,7 +179,9 @@ export function AuthPage() {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     minLength={6}
-                    autoComplete={isRegister ? "new-password" : "current-password"}
+                    autoComplete={
+                      isRegister ? "new-password" : "current-password"
+                    }
                     required
                   />
                   {isRegister && (
