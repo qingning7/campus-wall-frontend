@@ -2,7 +2,6 @@
 
 import * as React from "react";
 
-import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
@@ -36,13 +35,6 @@ const data = {
       plan: "校园墙",
     },
   ],
-  schools: [
-    {
-      name: "选择学校",
-      url: "/school",
-      icon: <GraduationCapIcon />,
-    },
-  ],
   rooms: [
     {
       name: "示例私人房间",
@@ -68,13 +60,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { currentUser } = useAuth();
 
   if (!currentUser) return null;
+
+  const schoolRoomId = currentUser.school?.room?.id;
+
+  const schoolItems = [
+    {
+      name: currentUser.school?.name ?? "选择学校",
+      url: currentUser.school ? `/rooms/${schoolRoomId}` : "/school",
+      icon: <GraduationCapIcon />,
+    },
+  ];
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavProjects title="我的学校" projects={data.schools} />
+        <NavProjects title="我的学校" projects={schoolItems} />
         <NavProjects title="我的房间" projects={data.rooms} />
         <NavProjects title="其它" projects={data.others} />
       </SidebarContent>

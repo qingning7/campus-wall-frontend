@@ -1,10 +1,25 @@
 import { apiRequest, clearAuthToken, saveAuthToken } from "../lib/api";
 
+export type AuthUserSchoolRoom = {
+  id: string;
+  type: "SCHOOL" | "PRIVATE";
+  name: string | null;
+  code: string | null;
+  createdAt: string;
+};
+
+export type AuthUserSchool = {
+  id: string;
+  name: string;
+  room: AuthUserSchoolRoom | null;
+};
+
 export type AuthUser = {
   id: string;
   email: string;
   name: string | null;
   schoolId: string | null;
+  school: AuthUserSchool | null;
   createdAt: string;
 };
 
