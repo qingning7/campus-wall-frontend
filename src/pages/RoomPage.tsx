@@ -37,7 +37,7 @@ export function RoomPage() {
     }
 
     const socket = getSocket();
-    
+
     function joinCurrentRoom() {
       socket.emit("join-room", { roomId });
     }
@@ -46,7 +46,7 @@ export function RoomPage() {
       console.log("socket joined room:", payload.roomId);
     }
 
-    function handleRoomError(payload: { message: string}) {
+    function handleRoomError(payload: { message: string }) {
       setMessageError(payload.message);
     }
 
@@ -149,7 +149,7 @@ export function RoomPage() {
   async function handleSendMessage(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!roomId || sendingMessage) {
+    if (!roomId || sendingMessage || !currentUser) {
       return;
     }
 
@@ -159,17 +159,36 @@ export function RoomPage() {
       return;
     }
 
+    const optimisticMessage: ChatMessage = {
+      id: `optimistic-${Date.now()}`,
+      content,
+      createdAt: new Date().toISOString(),
+      roomId,
+      authorId: currentUser.id,
+      author: {
+        id: currentUser.id,
+        name: currentUser.name,
+      },
+    };
+    
     setMessageText("");
     setSendingMessage(true);
     setMessageError("");
+    setMessages((prev) => appendMessageOnce(prev, optimisticMessage));
 
     try {
       const sentMessage = await sendRoomMessage(roomId, { content });
 
-      setMessages((prev) => appendMessageOnce(prev, sentMessage));
-
-      setMessageText("");
+      setMessages((prev) => {
+        const withoutOptimisticMessage = prev.filter(
+          (message) => message.id !== optimisticMessage.id,
+        );
+        return appendMessageOnce(withoutOptimisticMessage, sentMessage);
+      });
     } catch (error) {
+      setMessages((prev) =>
+        prev.filter((message) => message.id !== optimisticMessage.id),
+      );
       setMessageText(content);
       setMessageError(error instanceof Error ? error.message : "发送消息失败");
     } finally {
