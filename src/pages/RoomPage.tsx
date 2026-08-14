@@ -7,6 +7,17 @@ import { sendRoomMessage } from "@/api/rooms";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessRoom } from "@/lib/room-access";
 import { getMyRooms } from "@/api/rooms";
+import { getSocket } from "@/lib/socket";
+
+function appendMessageOnce(messages: ChatMessage[], message: ChatMessage) {
+  const alreadyExists = messages.some((item) => item.id === message.id);
+
+  if (alreadyExists) {
+    return messages;
+  }
+
+  return [...messages, message];
+}
 
 export function RoomPage() {
   const { roomId } = useParams();
@@ -19,6 +30,49 @@ export function RoomPage() {
   const { currentUser } = useAuth();
   const [checkingRoomAccess, setCheckingRoomAccess] = useState(true);
   const [hasRoomAccess, setHasRoomAccess] = useState(false);
+
+  useEffect(() => {
+    if (!roomId || !hasRoomAccess || !currentUser) {
+      return;
+    }
+
+    const socket = getSocket();
+    
+    function joinCurrentRoom() {
+      socket.emit("join-room", { roomId });
+    }
+
+    function handleRoomJoined(payload: { roomId: string }) {
+      console.log("socket joined room:", payload.roomId);
+    }
+
+    function handleRoomError(payload: { message: string}) {
+      setMessageError(payload.message);
+    }
+
+    function handleRoomMessage(message: ChatMessage) {
+      setMessages((prev) => appendMessageOnce(prev, message));
+    }
+
+    socket.on("connect", joinCurrentRoom);
+    socket.on("room-joined", handleRoomJoined);
+    socket.on("room-error", handleRoomError);
+    socket.on("room-message", handleRoomMessage);
+
+    if (socket.connected) {
+      joinCurrentRoom();
+    } else {
+      socket.connect();
+    }
+
+    return () => {
+      socket.off("connect", joinCurrentRoom);
+      socket.off("room-joined", handleRoomJoined);
+      socket.off("room-error", handleRoomError);
+      socket.off("room-message", handleRoomMessage);
+      socket.disconnect();
+    };
+  }, [roomId, hasRoomAccess, currentUser]);
 
   useEffect(() => {
     if (!roomId || !currentUser) {
@@ -112,7 +166,8 @@ export function RoomPage() {
     try {
       const sentMessage = await sendRoomMessage(roomId, { content });
 
-      setMessages((prev) => [...prev, sentMessage]);
+      setMessages((prev) => appendMessageOnce(prev, sentMessage));
+
       setMessageText("");
     } catch (error) {
       setMessageText(content);
