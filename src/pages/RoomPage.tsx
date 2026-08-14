@@ -149,7 +149,7 @@ export function RoomPage() {
   async function handleSendMessage(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!roomId || sendingMessage || !currentUser) {
+    if (!roomId || !currentUser) {
       return;
     }
 
@@ -170,7 +170,7 @@ export function RoomPage() {
         name: currentUser.name,
       },
     };
-    
+
     setMessageText("");
     setSendingMessage(true);
     setMessageError("");
@@ -272,7 +272,7 @@ export function RoomPage() {
                   className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   placeholder="输入消息"
                 />
-                <Button type="submit" size="icon-sm" disabled={sendingMessage}>
+                <Button type="submit" size="icon-sm">
                   发送
                 </Button>
               </div>
