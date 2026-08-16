@@ -239,6 +239,10 @@ export function RoomPage() {
         >
           <PanelRightIcon />
         </Button>
+
+        {chatOpen && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-20 bg-gradient-to-b from-card via-card/95 to-transparent" />
+        )}
         {chatOpen && (
           <>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-12">
