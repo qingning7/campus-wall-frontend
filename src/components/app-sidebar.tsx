@@ -20,6 +20,19 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getMyRooms, createPrivateRoom, type Room } from "@/api/rooms";
+import { useNavigate } from "react-router";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // This is sample data.
 const data = {
@@ -58,6 +71,69 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [roomName, setRoomName] = React.useState("");
+  const [roomPassword, setRoomPassword] = React.useState("");
+  const [creatingRoom, setCreatingRoom] = React.useState(false);
+  const [privateRooms, setPrivateRooms] = React.useState<Room[]>([]);
+  const [loadingRooms, setLoadingRooms] = React.useState(false);
+
+  async function handleCreateRoom(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    const name = roomName.trim();
+    const password = roomPassword.trim();
+
+    setCreatingRoom(true);
+
+    try {
+      const room = await createPrivateRoom({
+        name: name || undefined,
+      });
+
+      setCreateOpen(false);
+      setRoomName("");
+      setRoomPassword("");
+      navigate(`/rooms/${room.id}`);
+    } finally {
+      setCreatingRoom(false);
+    }
+  }
+
+  React.useEffect(() => {
+    if (!currentUser) {
+      return;
+    }
+
+    let ignore = false;
+
+    async function loadRooms() {
+      setLoadingRooms(true);
+
+      try {
+        const rooms = await getMyRooms();
+
+        if (!ignore) {
+          setPrivateRooms(rooms.filter((room) => room.type === "PRIVATE"));
+        }
+      } catch {
+        if (!ignore) {
+          setPrivateRooms([]);
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingRooms(false);
+        }
+      }
+    }
+
+    void loadRooms();
+
+    return () => {
+      ignore = true;
+    };
+  }, [currentUser?.id]);
 
   if (!currentUser) return null;
 
@@ -70,6 +146,42 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: <GraduationCapIcon />,
     },
   ];
+
+  const privateRoomItems = loadingRooms
+    ? [
+        {
+          name: "加载中...",
+          url: "#",
+          icon: <HashIcon />,
+        },
+      ]
+    : privateRooms.length
+      ? privateRooms.map((room) => ({
+          name: room.name || `房间 ${room.code}`,
+          url: `/rooms/${room.id}`,
+          icon: <HashIcon />,
+        }))
+      : [
+          {
+            name: "暂无房间",
+            url: "#",
+            icon: <HashIcon />,
+          },
+        ];
+
+  const otherItems = [
+    {
+      name: "创建房间",
+      url: "#",
+      icon: <PlusIcon />,
+      onClick: () => setCreateOpen(true),
+    },
+    {
+      name: "加入房间",
+      url: "#",
+      icon: <DoorOpenIcon />,
+    },
+  ];
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -77,8 +189,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavProjects title="我的学校" projects={schoolItems} />
-        <NavProjects title="我的房间" projects={data.rooms} />
-        <NavProjects title="其它" projects={data.others} />
+        <NavProjects title="我的房间" projects={privateRoomItems} />
+        <NavProjects title="其它" projects={otherItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser
@@ -90,6 +202,50 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarFooter>
       <SidebarRail />
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>创建房间</DialogTitle>
+            <DialogDescription>输入房间名，密码可选。</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateRoom} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="room-name">房间名</Label>
+              <Input
+                id="room-name"
+                value={roomName}
+                onChange={(e) => setRoomName(e.target.value)}
+                placeholder=""
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="room-password">密码（可选）</Label>
+              <Input
+                id="room-password"
+                type="password"
+                value={roomPassword}
+                onChange={(e) => setRoomPassword(e.target.value)}
+                placeholder=""
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateOpen(false)}
+              >
+                取消
+              </Button>
+              <Button type="submit" disabled={creatingRoom}>
+                {creatingRoom ? "创建中..." : "创建"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   );
 }

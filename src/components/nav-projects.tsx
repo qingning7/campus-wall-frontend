@@ -33,6 +33,7 @@ export function NavProjects({
     name: string;
     url: string;
     icon: React.ReactNode;
+    onClick?: () => void;
   }[];
 }) {
   const { isMobile } = useSidebar();
@@ -42,10 +43,17 @@ export function NavProjects({
       <SidebarMenu>
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton render={<Link to={item.url} />}>
-              {item.icon}
-              <span>{item.name}</span>
-            </SidebarMenuButton>
+            {item.onClick ? (
+              <SidebarMenuButton type="button" onClick={item.onClick}>
+                {item.icon}
+                <span>{item.name}</span>
+              </SidebarMenuButton>
+            ) : (
+              <SidebarMenuButton render={<Link to={item.url ?? "#"} />}>
+                {item.icon}
+                <span>{item.name}</span>
+              </SidebarMenuButton>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
