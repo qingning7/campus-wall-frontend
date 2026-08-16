@@ -36,6 +36,24 @@ export type JoinRoonResult = {
   };
 };
 
+export type ChatMessageAuthor = {
+  id: string;
+  name: string | null;
+};
+
+export type ChatMessage = {
+  id: string;
+  content: string;
+  createdAt: string;
+  roomId: string;
+  authorId: string;
+  author: ChatMessageAuthor;
+};
+
+export type SendRoomMessageInput = {
+  content: string;
+};
+
 export async function getMyRooms() {
   return apiRequest<Room[]>("/api/rooms/mine", {
     auth: true,
@@ -52,6 +70,23 @@ export async function createPrivateRoom(input: CreatPrivateRoomInput) {
 
 export async function joinRoom(input: JoinRoomInput) {
   return apiRequest<JoinRoonResult>("/api/rooms/join", {
+    method: "POST",
+    auth: true,
+    body: input,
+  });
+}
+
+export async function getRoomMessages(roomId: string) {
+  return apiRequest<ChatMessage[]>(`/api/rooms/${roomId}/messages`, {
+    auth: true,
+  });
+}
+
+export async function sendRoomMessage(
+  roomId: string,
+  input: SendRoomMessageInput,
+) {
+  return apiRequest<ChatMessage>(`/api/rooms/${roomId}/messages`, {
     method: "POST",
     auth: true,
     body: input,
