@@ -104,6 +104,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         password: password || undefined,
       });
 
+      setPrivateRooms((prev) => {
+        const alreadyExists = prev.some((item) => item.id === room.id);
+
+        if (alreadyExists) {
+          return prev;
+        }
+
+        return [room, ...prev];
+      })
+
       setCreateOpen(false);
       setRoomName("");
       setRoomPassword("");
