@@ -20,7 +20,12 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getMyRooms, createPrivateRoom, type Room } from "@/api/rooms";
+import {
+  getMyRooms,
+  createPrivateRoom,
+  joinRoom,
+  type Room,
+} from "@/api/rooms";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +38,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 // This is sample data.
 const data = {
   user: {
@@ -77,7 +81,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [roomPassword, setRoomPassword] = React.useState("");
   const [creatingRoom, setCreatingRoom] = React.useState(false);
   const [privateRooms, setPrivateRooms] = React.useState<Room[]>([]);
-  const [loadingRooms, setLoadingRooms] = React.useState(false);
+  const [loadingRooms, setLoadingRooms] = React.useState(false); // 创建房间
+  const [joinOpen, setJoinOpen] = React.useState(false);
+  const [joinCode, setJoinCode] = React.useState("");
+  const [joinPassword, setJoinPassword] = React.useState("");
+  const [joiningRoom, setJoiningRoom] = React.useState(false);
+  const [joinError, setJoinError] = React.useState("");
 
   async function handleCreateRoom(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -98,6 +107,47 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       navigate(`/rooms/${room.id}`);
     } finally {
       setCreatingRoom(false);
+    }
+  }
+
+  async function handleJoinRoom(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    const code = joinCode.trim();
+    const password = joinPassword.trim();
+
+    if (!code) {
+      setJoinError("请输入房间号");
+      return;
+    }
+
+    setJoinError("");
+    setJoiningRoom(true);
+
+    try {
+      const result = await joinRoom({
+        code,
+        password: password || undefined,
+      });
+
+      setPrivateRooms((prev) => {
+        const alreadyExists = prev.some((room) => room.id === result.room.id);
+
+        if (alreadyExists) {
+          return prev;
+        }
+
+        return [result.room, ...prev];
+      });
+
+      setJoinOpen(false);
+      setJoinCode("");
+      setJoinPassword("");
+      navigate(`/rooms/${result.room.id}`);
+    } catch (error) {
+      setJoinError(error instanceof Error ? error.message : "加入房间失败");
+    } finally {
+      setJoiningRoom(false);
     }
   }
 
@@ -180,6 +230,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       name: "加入房间",
       url: "#",
       icon: <DoorOpenIcon />,
+      onClick: () => setJoinOpen(true),
     },
   ];
   return (
@@ -241,6 +292,54 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Button>
               <Button type="submit" disabled={creatingRoom}>
                 {creatingRoom ? "创建中..." : "创建"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>加入房间</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleJoinRoom} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="join-room-code">房间号</Label>
+              <Input
+                id="join-room-code"
+                value={joinCode}
+                onChange={(event) => setJoinCode(event.target.value)}
+                placeholder="输入 6 位房间号"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="join-room-password">密码（如果有）</Label>
+              <Input
+                id="join-room-password"
+                type="password"
+                value={joinPassword}
+                onChange={(event) => setJoinPassword(event.target.value)}
+                placeholder="无密码可留空"
+              />
+            </div>
+
+            {joinError && (
+              <p className="text-sm text-destructive">{joinError}</p>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setJoinOpen(false)}
+              >
+                取消
+              </Button>
+              <Button type="submit" disabled={joiningRoom}>
+                {joiningRoom ? "加入中..." : "加入"}
               </Button>
             </DialogFooter>
           </form>
