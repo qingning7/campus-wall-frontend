@@ -34,6 +34,7 @@ export function NavProjects({
     url: string;
     icon: React.ReactNode;
     onClick?: () => void;
+    onShare?: () => void;
   }[];
 }) {
   const { isMobile } = useSidebar();
@@ -71,18 +72,13 @@ export function NavProjects({
                 side={isMobile ? "bottom" : "right"}
                 align={isMobile ? "end" : "start"}
               >
-                <DropdownMenuItem>
-                  <FolderIcon />
-                  <span>View Project</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={item.onShare}>
                   <ArrowRightIcon />
-                  <span>Share Project</span>
+                  <span>分享房间</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive">
                   <Trash2Icon />
-                  <span>Delete Project</span>
+                  <span>退出房间</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

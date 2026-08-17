@@ -86,7 +86,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [joinCode, setJoinCode] = React.useState("");
   const [joinPassword, setJoinPassword] = React.useState("");
   const [joiningRoom, setJoiningRoom] = React.useState(false);
-  const [joinError, setJoinError] = React.useState("");
+  const [joinError, setJoinError] = React.useState(""); // 加入房间
+  const [shareRoomCode, setShareRoomCode] = React.useState("");
+  const [copiedRoomCode, setCopiedRoomCode] = React.useState(false);
 
   async function handleCreateRoom(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -151,6 +153,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }
 
+  async function handleCopyRoomCode() {
+    if (!shareRoomCode) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(shareRoomCode);
+    setCopiedRoomCode(true);
+
+    window.setTimeout(() => {
+      setCopiedRoomCode(false);
+    }, 1500);
+  }
+
   React.useEffect(() => {
     if (!currentUser) {
       return;
@@ -210,6 +225,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           name: room.name || `房间 ${room.code}`,
           url: `/rooms/${room.id}`,
           icon: <HashIcon />,
+          onShare: () => setShareRoomCode(room.code ?? ""),
         }))
       : [
           {
@@ -343,6 +359,37 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!shareRoomCode}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShareRoomCode("");
+          }
+        }}
+      >
+        <DialogContent className="relative">
+          <DialogHeader>
+            <DialogTitle>分享房间</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">点击复制房间号</p>
+            <button
+              type="button"
+              onClick={handleCopyRoomCode}
+              className="w-full rounded-md border bg-muted px-3 py-2 text-left text-lg font-semibold tracking-wider transition hover:bg-muted/80"
+            >
+              {shareRoomCode}
+            </button>
+          </div>
+          {copiedRoomCode && (
+            <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 rounded-md border bg-popover px-3 py-1.5 text-sm shadow-md">
+              已复制
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Sidebar>
