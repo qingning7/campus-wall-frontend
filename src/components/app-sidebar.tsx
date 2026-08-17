@@ -101,6 +101,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     try {
       const room = await createPrivateRoom({
         name: name || undefined,
+        password: password || undefined,
       });
 
       setCreateOpen(false);
@@ -338,6 +339,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 type="password"
                 value={joinPassword}
                 onChange={(event) => setJoinPassword(event.target.value)}
+                minLength={4}
                 placeholder="无密码可留空"
               />
             </div>
