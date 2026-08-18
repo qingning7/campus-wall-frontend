@@ -36,6 +36,10 @@ export type JoinRoonResult = {
   };
 };
 
+export type LeaveRoomResult = {
+  roomId: string;
+};
+
 export type ChatMessageAuthor = {
   id: string;
   name: string | null;
@@ -73,6 +77,13 @@ export async function joinRoom(input: JoinRoomInput) {
     method: "POST",
     auth: true,
     body: input,
+  });
+}
+
+export async function leaveRoom(roomId: string) {
+  return apiRequest<LeaveRoomResult>(`/api/rooms/${roomId}/leave`, {
+    method: "POST",
+    auth: true,
   });
 }
 

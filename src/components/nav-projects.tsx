@@ -35,6 +35,8 @@ export function NavProjects({
     icon: React.ReactNode;
     onClick?: () => void;
     onShare?: () => void;
+    dangerLabel?: string;
+    onDanger?: () => void;
   }[];
 }) {
   const { isMobile } = useSidebar();
@@ -76,9 +78,12 @@ export function NavProjects({
                   <ArrowRightIcon />
                   <span>分享房间</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem variant="destructive">
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => item.onDanger?.()}
+                >
                   <Trash2Icon />
-                  <span>退出房间</span>
+                  <span>{item.dangerLabel ?? "退出房间"}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

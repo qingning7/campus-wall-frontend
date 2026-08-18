@@ -24,6 +24,7 @@ import {
   getMyRooms,
   createPrivateRoom,
   joinRoom,
+  leaveRoom,
   type Room,
 } from "@/api/rooms";
 import { useNavigate } from "react-router";
@@ -88,7 +89,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [joiningRoom, setJoiningRoom] = React.useState(false);
   const [joinError, setJoinError] = React.useState(""); // 加入房间
   const [shareRoomCode, setShareRoomCode] = React.useState("");
-  const [copiedRoomCode, setCopiedRoomCode] = React.useState(false);
+  const [copiedRoomCode, setCopiedRoomCode] = React.useState(false); // 分享房间
+  const [leavingRoomId, setLeavingRoomId] = React.useState("");
 
   async function handleCreateRoom(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -112,7 +114,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         }
 
         return [room, ...prev];
-      })
+      });
 
       setCreateOpen(false);
       setRoomName("");
@@ -161,6 +163,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       setJoinError(error instanceof Error ? error.message : "加入房间失败");
     } finally {
       setJoiningRoom(false);
+    }
+  }
+
+  async function handleLeaveRoom(room: Room) {
+    const confirmed = window.confirm(
+      `确定要退出“${room.name || `房间 ${room.code}`}”吗？`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setLeavingRoomId(room.id);
+
+    try {
+      await leaveRoom(room.id);
+
+      setPrivateRooms((prev) => prev.filter((item) => item.id !== room.id));
+
+      if (window.location.pathname === `/rooms/${room.id}`) {
+        navigate("/");
+      }
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "退出房间失败");
+    } finally {
+      setLeavingRoomId("");
     }
   }
 
@@ -237,6 +265,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           url: `/rooms/${room.id}`,
           icon: <HashIcon />,
           onShare: () => setShareRoomCode(room.code ?? ""),
+          dangerLabel: leavingRoomId === room.id ? "退出中..." : "退出房间",
+          onDanger: () => void handleLeaveRoom(room),
         }))
       : [
           {
