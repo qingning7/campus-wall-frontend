@@ -33,6 +33,10 @@ export function NavProjects({
     name: string;
     url: string;
     icon: React.ReactNode;
+    onClick?: () => void;
+    onShare?: () => void;
+    dangerLabel?: string;
+    onDanger?: () => void;
   }[];
 }) {
   const { isMobile } = useSidebar();
@@ -42,10 +46,17 @@ export function NavProjects({
       <SidebarMenu>
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton render={<Link to={item.url} />}>
-              {item.icon}
-              <span>{item.name}</span>
-            </SidebarMenuButton>
+            {item.onClick ? (
+              <SidebarMenuButton type="button" onClick={item.onClick}>
+                {item.icon}
+                <span>{item.name}</span>
+              </SidebarMenuButton>
+            ) : (
+              <SidebarMenuButton render={<Link to={item.url ?? "#"} />}>
+                {item.icon}
+                <span>{item.name}</span>
+              </SidebarMenuButton>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -63,18 +74,16 @@ export function NavProjects({
                 side={isMobile ? "bottom" : "right"}
                 align={isMobile ? "end" : "start"}
               >
-                <DropdownMenuItem>
-                  <FolderIcon />
-                  <span>View Project</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={item.onShare}>
                   <ArrowRightIcon />
-                  <span>Share Project</span>
+                  <span>分享房间</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive">
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => item.onDanger?.()}
+                >
                   <Trash2Icon />
-                  <span>Delete Project</span>
+                  <span>{item.dangerLabel ?? "退出房间"}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
