@@ -25,6 +25,7 @@ import {
   createPrivateRoom,
   joinRoom,
   leaveRoom,
+  deleteRoom,
   type Room,
 } from "@/api/rooms";
 import { useNavigate } from "react-router";
@@ -91,6 +92,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [shareRoomCode, setShareRoomCode] = React.useState("");
   const [copiedRoomCode, setCopiedRoomCode] = React.useState(false); // 分享房间
   const [leavingRoomId, setLeavingRoomId] = React.useState("");
+  const [deletingRoomId, setDeletingRoomId] = React.useState("");
 
   async function handleCreateRoom(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -192,6 +194,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }
 
+  async function handleDeleteRoom(room: Room) {
+    const confirmed = window.confirm(
+      `确定要删除“${room.name || `房间 ${room.code}`}”吗？`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingRoomId(room.id);
+
+    try {
+      await deleteRoom(room.id);
+
+      setPrivateRooms((prev) => prev.filter((item) => item.id !== room.id));
+
+      if (window.location.pathname === `/rooms/${room.id}`) {
+        navigate("/");
+      }
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "删除房间失败");
+    } finally {
+      setDeletingRoomId("");
+    }
+  }
+
   async function handleCopyRoomCode() {
     if (!shareRoomCode) {
       return;
@@ -260,14 +288,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ]
     : privateRooms.length
-      ? privateRooms.map((room) => ({
-          name: room.name || `房间 ${room.code}`,
-          url: `/rooms/${room.id}`,
-          icon: <HashIcon />,
-          onShare: () => setShareRoomCode(room.code ?? ""),
-          dangerLabel: leavingRoomId === room.id ? "退出中..." : "退出房间",
-          onDanger: () => void handleLeaveRoom(room),
-        }))
+      ? privateRooms.map((room) => {
+          const isOwner = room.ownerId === currentUser.id;
+
+          return {
+            name: room.name || `房间 ${room.code}`,
+            url: `/rooms/${room.id}`,
+            icon: <HashIcon />,
+            onShare: () => setShareRoomCode(room.code ?? ""),
+            dangerLabel: isOwner
+              ? deletingRoomId === room.id
+                ? "删除中..."
+                : "删除房间"
+              : leavingRoomId === room.id
+                ? "退出中..."
+                : "退出房间",
+            onDanger: () =>
+              void (isOwner ? handleDeleteRoom(room) : handleLeaveRoom(room)),
+          };
+        })
       : [
           {
             name: "暂无房间",

@@ -13,6 +13,7 @@ export type Room = {
   name: string | null;
   code: string | null;
   createdAt: string;
+  ownerId: string | null;
   school: RoomSchool | null;
 };
 
@@ -37,6 +38,10 @@ export type JoinRoonResult = {
 };
 
 export type LeaveRoomResult = {
+  roomId: string;
+};
+
+export type DeleteRoomResult = {
   roomId: string;
 };
 
@@ -83,6 +88,13 @@ export async function joinRoom(input: JoinRoomInput) {
 export async function leaveRoom(roomId: string) {
   return apiRequest<LeaveRoomResult>(`/api/rooms/${roomId}/leave`, {
     method: "POST",
+    auth: true,
+  });
+}
+
+export async function deleteRoom(roomId: string) {
+  return apiRequest<DeleteRoomResult>(`/api/rooms/${roomId}`, {
+    method: "DELETE",
     auth: true,
   });
 }
