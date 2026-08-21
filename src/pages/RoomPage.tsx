@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { PanelRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getRoomMessages, type ChatMessage } from "@/api/rooms";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { canAccessRoom } from "@/lib/room-access";
 import { getMyRooms } from "@/api/rooms";
 import { getSocket } from "@/lib/socket";
+import { useWallCanvas } from "@/canvas/useWallCanvas";
 
 function appendMessageOnce(messages: ChatMessage[], message: ChatMessage) {
   const alreadyExists = messages.some((item) => item.id === message.id);
@@ -30,38 +31,15 @@ export function RoomPage() {
   const [checkingRoomAccess, setCheckingRoomAccess] = useState(true);
   const [hasRoomAccess, setHasRoomAccess] = useState(false);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const WALL_WIDTH = 2400;
-  const WALL_HEIGHT = 1400;
-  const GRID_SIZE = 100;
-
-  function drawWallBackground(ctx: CanvasRenderingContext2D) {
-    ctx.clearRect(0, 0, WALL_WIDTH, WALL_HEIGHT);
-
-    ctx.fillStyle = "#f8fafc";
-    ctx.fillRect(0, 0, WALL_WIDTH, WALL_HEIGHT);
-
-    ctx.strokeStyle = "#e2e8f0";
-    ctx.lineWidth = 1;
-  }
-  
-  useEffect(() => {
-    if (!roomId) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-
-    canvas.width = WALL_WIDTH * dpr;
-    canvas.height = WALL_HEIGHT * dpr;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawWallBackground(ctx);
-  }, [roomId]);
+  const {
+    canvasRef,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel,
+    wallWidth,
+    wallHeight,
+  } = useWallCanvas(roomId, hasRoomAccess);
 
   useEffect(() => {
     if (!roomId || !hasRoomAccess || !currentUser) {
@@ -246,10 +224,14 @@ export function RoomPage() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div
             className="relative shrink-0"
-            style={{ width: WALL_WIDTH, height: WALL_HEIGHT }}
+            style={{ width: wallWidth, height: wallHeight }}
           >
             <canvas
               ref={canvasRef}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerCancel}
               className="absolute inset-0 h-full w-full"
             />
           </div>
