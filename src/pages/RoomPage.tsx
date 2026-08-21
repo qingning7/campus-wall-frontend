@@ -91,6 +91,12 @@ export function RoomPage() {
       return;
     }
 
+    if (currentUser.school?.room?.id === roomId) {
+      setHasRoomAccess(true);
+      setCheckingRoomAccess(false);
+      return;
+    } // 优化进入学校公共房间的加载时间。私人房间需要请求 /api/rooms/mine 来确认权限，学校房间跳过 getMyRooms() 请求
+
     let ignore = false;
 
     async function checkRoomAccess() {
