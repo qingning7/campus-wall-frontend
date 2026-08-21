@@ -202,8 +202,16 @@ export function RoomPage() {
       setMessageError(error instanceof Error ? error.message : "发送消息失败");
     }
   }
+  // 房间权限检查时不渲染房间页面
+  if (checkingRoomAccess) {
+    return (
+      <main className="flex h-[calc(100svh-3.5rem)] items-center justify-center bg-background text-foreground">
+        <p className="text-sm text-muted-foreground">加载房间中...</p>
+      </main>
+    );
+  }
 
-  if (!checkingRoomAccess && !hasRoomAccess) {
+  if (!hasRoomAccess) {
     return (
       <main className="flex h-[calc(100svh-3.5rem)] items-center justify-center bg-background text-foreground">
         <Link
