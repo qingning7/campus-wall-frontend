@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { PanelRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getRoomMessages, type ChatMessage } from "@/api/rooms";
@@ -26,10 +26,42 @@ export function RoomPage() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageError, setMessageError] = useState("");
   const [messageText, setMessageText] = useState("");
-  const [sendingMessage, setSendingMessage] = useState(false);
   const { currentUser } = useAuth();
   const [checkingRoomAccess, setCheckingRoomAccess] = useState(true);
   const [hasRoomAccess, setHasRoomAccess] = useState(false);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const WALL_WIDTH = 2400;
+  const WALL_HEIGHT = 1400;
+  const GRID_SIZE = 100;
+
+  function drawWallBackground(ctx: CanvasRenderingContext2D) {
+    ctx.clearRect(0, 0, WALL_WIDTH, WALL_HEIGHT);
+
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(0, 0, WALL_WIDTH, WALL_HEIGHT);
+
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
+  }
+  
+  useEffect(() => {
+    if (!roomId) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = WALL_WIDTH * dpr;
+    canvas.height = WALL_HEIGHT * dpr;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawWallBackground(ctx);
+  }, [roomId]);
 
   useEffect(() => {
     if (!roomId || !hasRoomAccess || !currentUser) {
@@ -172,7 +204,6 @@ export function RoomPage() {
     };
 
     setMessageText("");
-    setSendingMessage(true);
     setMessageError("");
     setMessages((prev) => appendMessageOnce(prev, optimisticMessage));
 
@@ -191,16 +222,10 @@ export function RoomPage() {
       );
       setMessageText(content);
       setMessageError(error instanceof Error ? error.message : "发送消息失败");
-    } finally {
-      setSendingMessage(false);
     }
   }
 
-  if (checkingRoomAccess) {
-    return null;
-  }
-
-  if (!hasRoomAccess) {
+  if (!checkingRoomAccess && !hasRoomAccess) {
     return (
       <main className="flex h-[calc(100svh-3.5rem)] items-center justify-center bg-background text-foreground">
         <Link
@@ -216,9 +241,18 @@ export function RoomPage() {
 
   return (
     <main className="flex h-[calc(100svh-3.5rem)] min-h-0 bg-background text-foreground">
-      <section className="relative min-w-0 flex-1 overflow-hidden bg-white">
-        <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-          画画区
+      {/*画布*/}
+      <section className="relative flex-1 min-w-0 overflow-hidden bg-background">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div
+            className="relative shrink-0"
+            style={{ width: WALL_WIDTH, height: WALL_HEIGHT }}
+          >
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 h-full w-full"
+            />
+          </div>
         </div>
       </section>
 
