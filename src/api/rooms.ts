@@ -63,6 +63,27 @@ export type SendRoomMessageInput = {
   content: string;
 };
 
+export type WallPoint = {
+  x: number;
+  y: number;
+};
+
+export type WallStroke = {
+  id: string;
+  createdAt: string;
+  roomId: string;
+  authorId: string;
+  color: string;
+  size: number;
+  points: WallPoint[];
+};
+
+export type SaveRoomStrokrIput = {
+  color: string;
+  size: number;
+  points: WallPoint[]
+};
+
 export async function getMyRooms() {
   return apiRequest<Room[]>("/api/rooms/mine", {
     auth: true,
@@ -111,6 +132,23 @@ export async function sendRoomMessage(
 ) {
   return apiRequest<ChatMessage>(`/api/rooms/${roomId}/messages`, {
     method: "POST",
+    auth: true,
+    body: input,
+  });
+}
+
+export async function getRoomStrokes(roomId: string) {
+  return apiRequest<WallStroke[]>(`/api/rooms/${roomId}/strokes`, {
+    auth: true,
+  });
+}
+
+export async function saveRoomStroke(
+  roomId: string,
+  input: SaveRoomStrokrIput,
+) {
+  return apiRequest<WallStroke>(`/api/rooms/${roomId}/strokes`, {
+    method: "post",
     auth: true,
     body: input,
   });
