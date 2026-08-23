@@ -1,14 +1,20 @@
 import { Link, useParams } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PanelRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getRoomMessages, type ChatMessage } from "@/api/rooms";
-import { sendRoomMessage } from "@/api/rooms";
+import {
+  getMyRooms,
+  getRoomMessages,
+  getRoomStrokes,
+  saveRoomStroke,
+  sendRoomMessage,
+  type ChatMessage,
+} from "@/api/rooms";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessRoom } from "@/lib/room-access";
-import { getMyRooms } from "@/api/rooms";
 import { getSocket } from "@/lib/socket";
-import { useWallCanvas } from "@/canvas/useWallCanvas";
+import { Wall, getCanvasPoint } from "@/canvas/wall";
+import { DEFAULT_BRUSH, type WallPoint } from "@/canvas/stroke";
 
 function appendMessageOnce(messages: ChatMessage[], message: ChatMessage) {
   const alreadyExists = messages.some((item) => item.id === message.id);
@@ -20,6 +26,8 @@ function appendMessageOnce(messages: ChatMessage[], message: ChatMessage) {
   return [...messages, message];
 }
 
+const WALL_STROKE_COLOR = "#111827";
+
 export function RoomPage() {
   const { roomId } = useParams();
   const [chatOpen, setChatOpen] = useState(true);
@@ -27,19 +35,13 @@ export function RoomPage() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageError, setMessageError] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [strokes, setStrokes] = useState<WallPoint[][]>([]);
+  const [currentStroke, setCurrentStroke] = useState<WallPoint[]>([]);
+  const isDrawingRef = useRef(false);
+  const currentStrokeRef = useRef<WallPoint[]>([]);
   const { currentUser } = useAuth();
   const [checkingRoomAccess, setCheckingRoomAccess] = useState(true);
   const [hasRoomAccess, setHasRoomAccess] = useState(false);
-
-  const {
-    canvasRef,
-    onPointerDown,
-    onPointerMove,
-    onPointerUp,
-    onPointerCancel,
-    wallWidth,
-    wallHeight,
-  } = useWallCanvas(roomId, hasRoomAccess);
 
   useEffect(() => {
     if (!roomId || !hasRoomAccess || !currentUser) {
@@ -162,6 +164,55 @@ export function RoomPage() {
     };
   }, [roomId, hasRoomAccess]);
 
+  useEffect(() => {
+    if (!roomId || !hasRoomAccess) {
+      setStrokes([]);
+      setCurrentStroke([]);
+      return;
+    }
+
+    const nextRoomId = roomId;
+    let ignore = false;
+
+    async function loadStrokes() {
+      try {
+        const data = await getRoomStrokes(nextRoomId);
+
+        if (!ignore) {
+          setStrokes(data.map((stroke) => stroke.points));
+        }
+      } catch (error) {
+        if (!ignore) {
+          console.error(
+            error instanceof Error ? error.message : "加载涂鸦失败",
+          );
+        }
+      }
+    }
+
+    void loadStrokes();
+
+    return () => {
+      ignore = true;
+    };
+  }, [roomId, hasRoomAccess]);
+
+  async function persistStroke(points: WallPoint[]) {
+    if (!roomId || points.length < 2) {
+      return;
+    }
+
+    try {
+      await saveRoomStroke(roomId, {
+        color: WALL_STROKE_COLOR,
+        size: Math.round(DEFAULT_BRUSH.size ?? 14),
+        points,
+      });
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : "保存涂鸦失败");
+    }
+  }
+
   async function handleSendMessage(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -208,6 +259,45 @@ export function RoomPage() {
       setMessageError(error instanceof Error ? error.message : "发送消息失败");
     }
   }
+
+  function handlePointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+    const point = getCanvasPoint(event.nativeEvent, event.currentTarget);
+
+    isDrawingRef.current = true;
+    currentStrokeRef.current = [point];
+    setCurrentStroke([point]);
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!isDrawingRef.current) return;
+
+    const point = getCanvasPoint(event.nativeEvent, event.currentTarget);
+    const nextStroke = [...currentStrokeRef.current, point];
+
+    currentStrokeRef.current = nextStroke;
+    setCurrentStroke(nextStroke);
+  }
+
+  function finishStroke(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!isDrawingRef.current) return;
+
+    isDrawingRef.current = false;
+
+    const completedStroke = currentStrokeRef.current;
+    currentStrokeRef.current = [];
+    setCurrentStroke([]);
+
+    if (completedStroke.length >= 2) {
+      setStrokes((prev) => [...prev, completedStroke]);
+      void persistStroke(completedStroke);
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
   // 房间权限检查时不渲染房间页面
   if (checkingRoomAccess) {
     return (
@@ -236,17 +326,15 @@ export function RoomPage() {
       {/*画布*/}
       <section className="relative flex-1 min-w-0 overflow-hidden bg-background">
         <div className="absolute inset-0 flex items-center justify-center">
-          <div
-            className="relative shrink-0"
-            style={{ width: wallWidth, height: wallHeight }}
-          >
-            <canvas
-              ref={canvasRef}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerCancel}
-              className="absolute inset-0 h-full w-full"
+          <div className="relative shrink-0">
+            <Wall
+              strokes={strokes}
+              currentStroke={currentStroke}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={finishStroke}
+              onPointerLeave={finishStroke}
+              onPointerCancel={finishStroke}
             />
           </div>
         </div>

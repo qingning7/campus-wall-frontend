@@ -78,10 +78,10 @@ export type WallStroke = {
   points: WallPoint[];
 };
 
-export type SaveRoomStrokrIput = {
+export type SaveRoomStrokeIput = {
   color: string;
   size: number;
-  points: WallPoint[]
+  points: WallPoint[];
 };
 
 export async function getMyRooms() {
@@ -145,7 +145,7 @@ export async function getRoomStrokes(roomId: string) {
 
 export async function saveRoomStroke(
   roomId: string,
-  input: SaveRoomStrokrIput,
+  input: SaveRoomStrokeIput,
 ) {
   return apiRequest<WallStroke>(`/api/rooms/${roomId}/strokes`, {
     method: "post",
