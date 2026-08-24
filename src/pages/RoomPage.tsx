@@ -66,10 +66,15 @@ export function RoomPage() {
       setMessages((prev) => appendMessageOnce(prev, message));
     }
 
+    function handleRoomStroke(stroke: { points: WallPoint[] }) {
+      setStrokes((prev) => [...prev, stroke.points]);
+    }
+
     socket.on("connect", joinCurrentRoom);
     socket.on("room-joined", handleRoomJoined);
     socket.on("room-error", handleRoomError);
     socket.on("room-message", handleRoomMessage);
+    socket.on("room-stroke", handleRoomStroke);
 
     if (socket.connected) {
       joinCurrentRoom();
@@ -82,6 +87,7 @@ export function RoomPage() {
       socket.off("room-joined", handleRoomJoined);
       socket.off("room-error", handleRoomError);
       socket.off("room-message", handleRoomMessage);
+      socket.off("room-stroke", handleRoomStroke);
       socket.disconnect();
     };
   }, [roomId, hasRoomAccess, currentUser]);
@@ -290,7 +296,6 @@ export function RoomPage() {
     setCurrentStroke([]);
 
     if (completedStroke.length >= 2) {
-      setStrokes((prev) => [...prev, completedStroke]);
       void persistStroke(completedStroke);
     }
 
