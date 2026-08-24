@@ -26,6 +26,32 @@ function appendMessageOnce(messages: ChatMessage[], message: ChatMessage) {
   return [...messages, message];
 }
 
+function samePoint(a: WallPoint, b: WallPoint) {
+  return (
+    a.x === b.x &&
+    a.y === b.y &&
+    (a.pressure ?? 0.5) === (b.pressure ?? 0.5)
+  );
+}
+
+function sameStroke(a: WallPoint[], b: WallPoint[]) {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  return a.every((point, index) => samePoint(point, b[index]!));
+}
+
+function appendStrokeOnce(strokes: WallPoint[][], stroke: WallPoint[]) {
+  const alreadyExists = strokes.some((item) => sameStroke(item, stroke));
+
+  if (alreadyExists) {
+    return strokes;
+  }
+
+  return [...strokes, stroke];
+}
+
 const WALL_STROKE_COLOR = "#111827";
 
 export function RoomPage() {
@@ -67,7 +93,7 @@ export function RoomPage() {
     }
 
     function handleRoomStroke(stroke: { points: WallPoint[] }) {
-      setStrokes((prev) => [...prev, stroke.points]);
+      setStrokes((prev) => appendStrokeOnce(prev, stroke.points));
     }
 
     socket.on("connect", joinCurrentRoom);
@@ -296,6 +322,7 @@ export function RoomPage() {
     setCurrentStroke([]);
 
     if (completedStroke.length >= 2) {
+      setStrokes((prev) => appendStrokeOnce(prev, completedStroke));
       void persistStroke(completedStroke);
     }
 
