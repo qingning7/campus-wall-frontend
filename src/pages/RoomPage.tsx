@@ -112,6 +112,7 @@ export function RoomPage() {
   const [messageError, setMessageError] = useState("");
   const [messageText, setMessageText] = useState("");
   const [strokes, setStrokes] = useState<WallPoint[][]>([]);
+  const [loadingStrokes, setLoadingStrokes] = useState(true);
   const [currentStroke, setCurrentStroke] = useState<WallPoint[]>([]);
   const isDrawingRef = useRef(false);
   const currentStrokeRef = useRef<WallPoint[]>([]);
@@ -290,12 +291,15 @@ export function RoomPage() {
 
   useEffect(() => {
     if (!roomId || !hasRoomAccess) {
+      setLoadingStrokes(false);
       setStrokes([]);
       setRemoteLiveStrokes([]);
       setCurrentStroke([]);
       finishedStrokeIdsRef.current.clear();
       return;
     }
+
+    setLoadingStrokes(true);
 
     const nextRoomId = roomId;
     let ignore = false;
@@ -312,6 +316,10 @@ export function RoomPage() {
           console.error(
             error instanceof Error ? error.message : "加载涂鸦失败",
           );
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingStrokes(false);
         }
       }
     }
@@ -470,6 +478,11 @@ export function RoomPage() {
     <main className="flex h-[calc(100svh-3.5rem)] min-h-0 bg-background text-foreground">
       {/*画布*/}
       <section className="relative flex-1 min-w-0 overflow-hidden bg-background">
+        {loadingStrokes && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/35">
+            <p className="text-sm text-muted-foreground">加载中...</p>
+          </div>
+        )}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative shrink-0">
             <Wall
