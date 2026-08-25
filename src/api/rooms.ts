@@ -79,6 +79,7 @@ export type WallStroke = {
 };
 
 export type SaveRoomStrokeIput = {
+  strokeId?: string;
   color: string;
   size: number;
   points: WallPoint[];

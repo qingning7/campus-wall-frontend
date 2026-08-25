@@ -28,9 +28,7 @@ function appendMessageOnce(messages: ChatMessage[], message: ChatMessage) {
 
 function samePoint(a: WallPoint, b: WallPoint) {
   return (
-    a.x === b.x &&
-    a.y === b.y &&
-    (a.pressure ?? 0.5) === (b.pressure ?? 0.5)
+    a.x === b.x && a.y === b.y && (a.pressure ?? 0.5) === (b.pressure ?? 0.5)
   );
 }
 
@@ -51,6 +49,58 @@ function appendStrokeOnce(strokes: WallPoint[][], stroke: WallPoint[]) {
 
   return [...strokes, stroke];
 }
+// live stroke
+type RemoteLiveStroke = {
+  strokeId: string;
+  authorId: string;
+  points: WallPoint[];
+};
+
+function upsertRemoteLiveStroke(
+  liveStrokes: RemoteLiveStroke[],
+  payload: { strokeId: string; authorId: string; point: WallPoint },
+) {
+  const index = liveStrokes.findIndex(
+    (item) => item.strokeId === payload.strokeId,
+  );
+
+  if (index === -1) {
+    return [
+      ...liveStrokes,
+      {
+        strokeId: payload.strokeId,
+        authorId: payload.authorId,
+        points: [payload.point],
+      },
+    ];
+  }
+
+  const current = liveStrokes[index]!;
+  const lastPoint = current.points[current.points.length - 1];
+
+  if (lastPoint && samePoint(lastPoint, payload.point)) {
+    return liveStrokes;
+  }
+
+  return [
+    ...liveStrokes.slice(0, index),
+    {
+      ...current,
+      points: [...current.points, payload.point],
+    },
+    ...liveStrokes.slice(index + 1),
+  ];
+}
+
+function removeRemoteLiveStrokeByAuthorAndPoints(
+  liveStrokes: RemoteLiveStroke[],
+  authorId: string,
+  points: WallPoint[],
+) {
+  return liveStrokes.filter(
+    (item) => !(item.authorId === authorId && sameStroke(item.points, points)),
+  );
+}
 
 const WALL_STROKE_COLOR = "#111827";
 
@@ -68,6 +118,11 @@ export function RoomPage() {
   const { currentUser } = useAuth();
   const [checkingRoomAccess, setCheckingRoomAccess] = useState(true);
   const [hasRoomAccess, setHasRoomAccess] = useState(false);
+  const [remoteLiveStrokes, setRemoteLiveStrokes] = useState<
+    RemoteLiveStroke[]
+  >([]);
+  const activeStrokeIdRef = useRef<string | null>(null);
+  const finishedStrokeIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
     if (!roomId || !hasRoomAccess || !currentUser) {
@@ -75,6 +130,7 @@ export function RoomPage() {
     }
 
     const socket = getSocket();
+    const currentUserId = currentUser.id;
 
     function joinCurrentRoom() {
       socket.emit("join-room", { roomId });
@@ -92,7 +148,41 @@ export function RoomPage() {
       setMessages((prev) => appendMessageOnce(prev, message));
     }
 
-    function handleRoomStroke(stroke: { points: WallPoint[] }) {
+    function handleRoomStrokePoint(payload: {
+      authorId: string;
+      strokeId: string;
+      point: WallPoint;
+    }) {
+      if (
+        payload.authorId === currentUserId ||
+        finishedStrokeIdsRef.current.has(payload.strokeId)
+      ) {
+        return;
+      }
+
+      setRemoteLiveStrokes((prev) => upsertRemoteLiveStroke(prev, payload));
+    }
+
+    function handleRoomStroke(stroke: {
+      authorId: string;
+      strokeId?: string | null;
+      points: WallPoint[];
+    }) {
+      if (stroke.strokeId) {
+        finishedStrokeIdsRef.current.add(stroke.strokeId);
+        setRemoteLiveStrokes((prev) =>
+          prev.filter((item) => item.strokeId !== stroke.strokeId),
+        );
+      } else {
+        setRemoteLiveStrokes((prev) =>
+          removeRemoteLiveStrokeByAuthorAndPoints(
+            prev,
+            stroke.authorId,
+            stroke.points,
+          ),
+        );
+      }
+
       setStrokes((prev) => appendStrokeOnce(prev, stroke.points));
     }
 
@@ -101,6 +191,7 @@ export function RoomPage() {
     socket.on("room-error", handleRoomError);
     socket.on("room-message", handleRoomMessage);
     socket.on("room-stroke", handleRoomStroke);
+    socket.on("room-stroke-point", handleRoomStrokePoint);
 
     if (socket.connected) {
       joinCurrentRoom();
@@ -114,6 +205,7 @@ export function RoomPage() {
       socket.off("room-error", handleRoomError);
       socket.off("room-message", handleRoomMessage);
       socket.off("room-stroke", handleRoomStroke);
+      socket.off("room-stroke-point", handleRoomStrokePoint);
       socket.disconnect();
     };
   }, [roomId, hasRoomAccess, currentUser]);
@@ -199,7 +291,9 @@ export function RoomPage() {
   useEffect(() => {
     if (!roomId || !hasRoomAccess) {
       setStrokes([]);
+      setRemoteLiveStrokes([]);
       setCurrentStroke([]);
+      finishedStrokeIdsRef.current.clear();
       return;
     }
 
@@ -229,20 +323,17 @@ export function RoomPage() {
     };
   }, [roomId, hasRoomAccess]);
 
-  async function persistStroke(points: WallPoint[]) {
+  async function persistStroke(strokeId: string | null, points: WallPoint[]) {
     if (!roomId || points.length < 2) {
       return;
     }
 
-    try {
-      await saveRoomStroke(roomId, {
-        color: WALL_STROKE_COLOR,
-        size: Math.round(DEFAULT_BRUSH.size ?? 14),
-        points,
-      });
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : "保存涂鸦失败");
-    }
+    await saveRoomStroke(roomId, {
+      strokeId: strokeId ?? undefined,
+      color: WALL_STROKE_COLOR,
+      size: Math.round(DEFAULT_BRUSH.size ?? 14),
+      points,
+    });
   }
 
   async function handleSendMessage(e: React.FormEvent<HTMLFormElement>) {
@@ -294,6 +385,16 @@ export function RoomPage() {
 
   function handlePointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
     const point = getCanvasPoint(event.nativeEvent, event.currentTarget);
+    const strokeId = crypto.randomUUID();
+    activeStrokeIdRef.current = strokeId;
+
+    if (roomId) {
+      getSocket().emit("room-stroke-point", {
+        roomId,
+        strokeId,
+        point,
+      });
+    }
 
     isDrawingRef.current = true;
     currentStrokeRef.current = [point];
@@ -307,6 +408,15 @@ export function RoomPage() {
 
     const point = getCanvasPoint(event.nativeEvent, event.currentTarget);
     const nextStroke = [...currentStrokeRef.current, point];
+    const strokeId = activeStrokeIdRef.current;
+
+    if (roomId && strokeId) {
+      getSocket().emit("room-stroke-point", {
+        roomId,
+        strokeId,
+        point,
+      });
+    }
 
     currentStrokeRef.current = nextStroke;
     setCurrentStroke(nextStroke);
@@ -318,12 +428,15 @@ export function RoomPage() {
     isDrawingRef.current = false;
 
     const completedStroke = currentStrokeRef.current;
+    const completedStrokeId = activeStrokeIdRef.current;
+
     currentStrokeRef.current = [];
+    activeStrokeIdRef.current = null;
     setCurrentStroke([]);
 
     if (completedStroke.length >= 2) {
       setStrokes((prev) => appendStrokeOnce(prev, completedStroke));
-      void persistStroke(completedStroke);
+      void persistStroke(completedStrokeId, completedStroke);
     }
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -361,6 +474,7 @@ export function RoomPage() {
           <div className="relative shrink-0">
             <Wall
               strokes={strokes}
+              liveStrokes={remoteLiveStrokes.map((stroke) => stroke.points)}
               currentStroke={currentStroke}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}

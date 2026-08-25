@@ -8,6 +8,7 @@ export const GRID_SIZE = 100;
 
 type WallProps = {
   strokes?: WallPoint[][];
+  liveStrokes?: WallPoint[][];
   currentStroke?: WallPoint[];
   onPointerDown?: PointerEventHandler<HTMLCanvasElement>;
   onPointerMove?: PointerEventHandler<HTMLCanvasElement>;
@@ -18,6 +19,7 @@ type WallProps = {
 
 export function Wall({
   strokes = [],
+  liveStrokes = [],
   currentStroke = [],
   onPointerDown,
   onPointerMove,
@@ -54,8 +56,15 @@ export function Wall({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    redrawWall(ctx, WALL_WIDTH, WALL_HEIGHT, strokes, currentStroke);
-  }, [strokes, currentStroke]);
+    redrawWall(
+      ctx,
+      WALL_WIDTH,
+      WALL_HEIGHT,
+      strokes,
+      liveStrokes,
+      currentStroke,
+    );
+  }, [strokes, liveStrokes, currentStroke]);
 
   return (
     <canvas
@@ -75,6 +84,7 @@ export function redrawWall(
   width: number,
   height: number,
   strokes: WallPoint[][],
+  liveStrokes: WallPoint[][] = [],
   currentStroke: WallPoint[] = [],
   background = "#f8fafc",
   color = "#111827",
@@ -86,6 +96,10 @@ export function redrawWall(
 
   for (const stroke of strokes) {
     drawStroke(ctx, stroke, color, brush);
+  }
+
+  for (const liveStroke of liveStrokes) {
+    drawStroke(ctx, liveStroke, color, brush);
   }
 
   if (currentStroke.length) {
