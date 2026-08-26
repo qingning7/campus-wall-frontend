@@ -41,10 +41,6 @@ export function RoomChat({ roomId, hasRoomAccess }: RoomChatProps) {
 
     const socket = getSocket();
 
-    function joinCurrentRoom() {
-      socket.emit("join-room", { roomId });
-    }
-
     function handleRoomError(payload: { message: string }) {
       setMessageError(payload.message);
     }
@@ -53,21 +49,12 @@ export function RoomChat({ roomId, hasRoomAccess }: RoomChatProps) {
       setMessages((prev) => appendMessageOnce(prev, message));
     }
 
-    socket.on("connect", joinCurrentRoom);
     socket.on("room-error", handleRoomError);
     socket.on("room-message", handleRoomMessage);
 
-    if (socket.connected) {
-      joinCurrentRoom();
-    } else {
-      socket.connect();
-    }
-
     return () => {
-      socket.off("connect", joinCurrentRoom);
       socket.off("room-error", handleRoomError);
       socket.off("room-message", handleRoomMessage);
-      socket.disconnect();
     };
   }, [roomId, hasRoomAccess, currentUser]);
 

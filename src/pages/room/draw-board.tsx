@@ -45,10 +45,6 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
     const socket = getSocket();
     const currentUserId = currentUser.id;
 
-    function joinCurrentRoom() {
-      socket.emit("join-room", { roomId });
-    }
-
     function handleRoomJoined(payload: { roomId: string }) {
       console.log("socket joined room:", payload.roomId);
     }
@@ -87,23 +83,14 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
       setStrokes((prev) => appendStrokeOnce(prev, stroke.points));
     }
 
-    socket.on("connect", joinCurrentRoom);
     socket.on("room-joined", handleRoomJoined);
     socket.on("room-stroke", handleRoomStroke);
     socket.on("room-stroke-point", handleRoomStrokePoint);
 
-    if (socket.connected) {
-      joinCurrentRoom();
-    } else {
-      socket.connect();
-    }
-
     return () => {
-      socket.off("connect", joinCurrentRoom);
       socket.off("room-joined", handleRoomJoined);
       socket.off("room-stroke", handleRoomStroke);
       socket.off("room-stroke-point", handleRoomStrokePoint);
-      socket.disconnect();
     };
   }, [roomId, hasRoomAccess, currentUser]);
 

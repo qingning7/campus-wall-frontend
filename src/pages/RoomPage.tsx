@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getMyRooms } from "@/api/rooms";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessRoom } from "@/lib/room-access";
+import { useRoomSocket } from "@/hooks/use-room-socket";
 import { RoomChat } from "./room/chat";
 import { DrawBoard } from "./room/draw-board";
 
@@ -12,6 +13,11 @@ export function RoomPage() {
   const [checkingRoomAccess, setCheckingRoomAccess] = useState(true);
   const [hasRoomAccess, setHasRoomAccess] = useState(false);
 
+  useRoomSocket({
+    roomId,
+    enabled: Boolean(roomId && hasRoomAccess && currentUser),
+  });
+  
   useEffect(() => {
     if (!roomId || !currentUser) {
       setCheckingRoomAccess(false);
