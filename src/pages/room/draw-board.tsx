@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getRoomStrokes, saveRoomStroke } from "@/api/rooms";
+import { getRoomStrokes, saveRoomStroke, deleteRoomStroke } from "@/api/rooms";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSocket } from "@/lib/socket";
 import { Wall, getCanvasPoint } from "@/canvas/wall";
@@ -7,6 +7,7 @@ import { DEFAULT_BRUSH, type WallPoint } from "@/canvas/stroke";
 import {
   appendStrokeOnce,
   removeRemoteLiveStrokeByAuthorAndPoints,
+  sameStroke,
   type RemoteLiveStroke,
   type RemoteStrokePointPayload,
   upsertRemoteLiveStroke,
@@ -33,6 +34,8 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   const currentStrokeRef = useRef<WallPoint[]>([]);
   const activeStrokeIdRef = useRef<string | null>(null);
   const finishedStrokeIdsRef = useRef(new Set<string>());
+  const ownStrokeIdsRef = useRef<string[]>([]);
+  const strokePointsByIdRef = useRef(new Map<string, WallPoint[]>());
 
   useEffect(() => {
     if (!roomId || !hasRoomAccess || !currentUser) {
@@ -68,6 +71,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
       points: WallPoint[];
     }) {
       if (stroke.strokeId) {
+        strokePointsByIdRef.current.set(stroke.strokeId, stroke.points);
         finishedStrokeIdsRef.current.add(stroke.strokeId);
         setRemoteLiveStrokes((prev) =>
           prev.filter((item) => item.strokeId !== stroke.strokeId),
@@ -85,14 +89,27 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
       setStrokes((prev) => appendStrokeOnce(prev, stroke.points));
     }
 
+    function handleRoomStrokeDeleted(payload: {
+      roomId: string;
+      strokeId: string;
+    }) {
+      if (payload.roomId !== roomId) {
+        return;
+      }
+
+      removePersistedStroke(payload.strokeId);
+    }
+
     socket.on("room-joined", handleRoomJoined);
     socket.on("room-stroke", handleRoomStroke);
     socket.on("room-stroke-point", handleRoomStrokePoint);
+    socket.on("room-stroke-deleted", handleRoomStrokeDeleted);
 
     return () => {
       socket.off("room-joined", handleRoomJoined);
       socket.off("room-stroke", handleRoomStroke);
       socket.off("room-stroke-point", handleRoomStrokePoint);
+      socket.off("room-stroke-deleted", handleRoomStrokeDeleted);
     };
   }, [roomId, hasRoomAccess, currentUser]);
 
@@ -100,6 +117,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
     if (!roomId || !hasRoomAccess || !currentUser) {
       return;
     }
+    const currentUserId = currentUser.id;
 
     let ignore = false;
     const nextRoomId = roomId;
@@ -115,6 +133,16 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
         const data = await getRoomStrokes(nextRoomId);
 
         if (!ignore) {
+          strokePointsByIdRef.current.clear();
+          ownStrokeIdsRef.current = [];
+
+          for (const stroke of data) {
+            strokePointsByIdRef.current.set(stroke.id, stroke.points);
+
+            if (stroke.authorId === currentUserId) {
+              ownStrokeIdsRef.current.push(stroke.id);
+            }
+          }
           setStrokes(data.map((stroke) => stroke.points));
         }
       } catch (error) {
@@ -143,15 +171,47 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
     }
 
     try {
-      await saveRoomStroke(roomId, {
+      const savedStroke = await saveRoomStroke(roomId, {
         strokeId: strokeId ?? undefined,
         color: WALL_STROKE_COLOR,
         size: Math.round(DEFAULT_BRUSH.size ?? 14),
         points,
       });
+
+      strokePointsByIdRef.current.set(savedStroke.id, points);
+
+      if (!ownStrokeIdsRef.current.includes(savedStroke.id)) {
+        ownStrokeIdsRef.current.push(savedStroke.id);
+      }
     } catch (error) {
       console.error(error instanceof Error ? error.message : "保存涂鸦失败");
     }
+  }
+
+  function removePersistedStroke(strokeId: string) {
+    const points = strokePointsByIdRef.current.get(strokeId);
+
+    strokePointsByIdRef.current.delete(strokeId);
+    ownStrokeIdsRef.current = ownStrokeIdsRef.current.filter(
+      (id) => id !== strokeId,
+    );
+
+    if (!points) {
+      return;
+    }
+
+    let removed = false;
+
+    setStrokes((prev) =>
+      prev.filter((stroke) => {
+        if (!removed && sameStroke(stroke, points)) {
+          removed = true;
+          return false;
+        }
+
+        return true;
+      }),
+    );
   }
 
   useEffect(() => {
@@ -171,7 +231,24 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
     };
 
     registerCanvasActions({
-      undo: () => {},
+      undo: () => {
+        const strokeId =
+          ownStrokeIdsRef.current[ownStrokeIdsRef.current.length - 1];
+
+        if (!strokeId || !roomId) {
+          return;
+        }
+
+        void deleteRoomStroke(roomId, strokeId)
+          .then(() => {
+            removePersistedStroke(strokeId);
+          })
+          .catch((error) => {
+            console.error(
+              error instanceof Error ? error.message : "撤销笔画失败",
+            );
+          });
+      },
       redo: () => {},
       clear,
     });

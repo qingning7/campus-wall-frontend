@@ -85,6 +85,11 @@ export type SaveRoomStrokeIput = {
   points: WallPoint[];
 };
 
+export type DeleteRoomStrokeResult = {
+  roomId: string;
+  strokeId: string;
+};
+
 export async function getMyRooms() {
   return apiRequest<Room[]>("/api/rooms/mine", {
     auth: true,
@@ -153,4 +158,14 @@ export async function saveRoomStroke(
     auth: true,
     body: input,
   });
+}
+
+export async function deleteRoomStroke(roomId: string, strokeId: string) {
+  return apiRequest<DeleteRoomStrokeResult>(
+    `/api/rooms/${roomId}/strokes/${strokeId}`,
+    {
+      method: "DELETE",
+      auth: true,
+    },
+  );
 }
