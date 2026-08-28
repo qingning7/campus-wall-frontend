@@ -17,7 +17,7 @@ export function RoomPage() {
     roomId,
     enabled: Boolean(roomId && hasRoomAccess && currentUser),
   });
-  
+
   useEffect(() => {
     if (!roomId || !currentUser) {
       setCheckingRoomAccess(false);
@@ -63,7 +63,7 @@ export function RoomPage() {
   // 房间权限检查时不渲染房间页面
   if (checkingRoomAccess) {
     return (
-      <main className="flex h-[calc(100svh-3.5rem)] items-center justify-center bg-background text-foreground">
+      <main className="flex min-h-0 flex-1 items-center justify-center bg-background text-foreground">
         <p className="text-sm text-muted-foreground">加载房间中...</p>
       </main>
     );
@@ -84,7 +84,7 @@ export function RoomPage() {
   }
 
   return (
-    <main className="flex h-[calc(100svh-3.5rem)] min-h-0 bg-background text-foreground">
+    <main className="flex min-h-0 flex-1 bg-background text-foreground">
       <DrawBoard roomId={roomId} hasRoomAccess={hasRoomAccess} />
       <RoomChat roomId={roomId} hasRoomAccess={hasRoomAccess} />
     </main>

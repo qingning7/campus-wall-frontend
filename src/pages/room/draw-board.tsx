@@ -11,6 +11,7 @@ import {
   type RemoteStrokePointPayload,
   upsertRemoteLiveStroke,
 } from "@/utils/draw";
+import { useRoomCanvas } from "@/contexts/RoomCanvasContext";
 
 const WALL_STROKE_COLOR = "#111827";
 
@@ -21,6 +22,7 @@ type DrawBoardProps = {
 
 export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   const { currentUser } = useAuth();
+  const { activeTool, registerCanvasActions } = useRoomCanvas();
   const [strokes, setStrokes] = useState<WallPoint[][]>([]);
   const [loadingStrokes, setLoadingStrokes] = useState(true);
   const [currentStroke, setCurrentStroke] = useState<WallPoint[]>([]);
@@ -152,7 +154,38 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
     }
   }
 
+  useEffect(() => {
+    if (!roomId || !hasRoomAccess || !currentUser) {
+      registerCanvasActions(null);
+      return;
+    }
+
+    const clear = () => {
+      setStrokes([]);
+      setRemoteLiveStrokes([]);
+      setCurrentStroke([]);
+      currentStrokeRef.current = [];
+      activeStrokeIdRef.current = null;
+      isDrawingRef.current = false;
+      finishedStrokeIdsRef.current.clear();
+    };
+
+    registerCanvasActions({
+      undo: () => {},
+      redo: () => {},
+      clear,
+    });
+
+    return () => {
+      registerCanvasActions(null);
+    };
+  }, [roomId, hasRoomAccess, currentUser, registerCanvasActions]);
+
   function handlePointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (activeTool !== "pen") {
+      return;
+    }
+
     const point = getCanvasPoint(event.nativeEvent, event.currentTarget);
     const strokeId = crypto.randomUUID();
     activeStrokeIdRef.current = strokeId;
