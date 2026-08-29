@@ -21,6 +21,13 @@ type DrawBoardProps = {
   hasRoomAccess: boolean;
 };
 
+type SavedStrokePayload = {
+  id: string;
+  authorId: string;
+  strokeId?: string | null;
+  points: WallPoint[];
+};
+
 export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   const { currentUser } = useAuth();
   const { activeTool, registerCanvasActions } = useRoomCanvas();
@@ -36,6 +43,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   const finishedStrokeIdsRef = useRef(new Set<string>());
   const ownStrokeIdsRef = useRef<string[]>([]);
   const strokePointsByIdRef = useRef(new Map<string, WallPoint[]>());
+  const deletedStrokeIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
     if (!roomId || !hasRoomAccess || !currentUser) {
@@ -65,11 +73,15 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
       setRemoteLiveStrokes((prev) => upsertRemoteLiveStroke(prev, payload));
     }
 
-    function handleRoomStroke(stroke: {
-      authorId: string;
-      strokeId?: string | null;
-      points: WallPoint[];
-    }) {
+    function handleRoomStroke(stroke: SavedStrokePayload) {
+      if (
+        deletedStrokeIdsRef.current.has(stroke.id) ||
+        (stroke.strokeId && deletedStrokeIdsRef.current.has(stroke.strokeId))
+      ) {
+        return;
+      }
+
+      strokePointsByIdRef.current.set(stroke.id, stroke.points);
       if (stroke.strokeId) {
         strokePointsByIdRef.current.set(stroke.strokeId, stroke.points);
         finishedStrokeIdsRef.current.add(stroke.strokeId);
@@ -97,6 +109,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
         return;
       }
 
+      deletedStrokeIdsRef.current.add(payload.strokeId);
       removePersistedStroke(payload.strokeId);
     }
 
@@ -239,15 +252,14 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
           return;
         }
 
-        void deleteRoomStroke(roomId, strokeId)
-          .then(() => {
-            removePersistedStroke(strokeId);
-          })
-          .catch((error) => {
-            console.error(
-              error instanceof Error ? error.message : "撤销笔画失败",
-            );
-          });
+        deletedStrokeIdsRef.current.add(strokeId);
+        removePersistedStroke(strokeId);
+
+        void deleteRoomStroke(roomId, strokeId).catch((error) => {
+          console.error(
+            error instanceof Error ? error.message : "撤销笔画失败",
+          );
+        });
       },
       redo: () => {},
       clear,
