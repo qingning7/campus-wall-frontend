@@ -4,7 +4,7 @@ import { getSocket } from "@/lib/socket";
 type UseRoomSocketOptions = {
   roomId?: string;
   enabled: boolean;
-}
+};
 
 export function useRoomSocket({ roomId, enabled }: UseRoomSocketOptions) {
   useEffect(() => {

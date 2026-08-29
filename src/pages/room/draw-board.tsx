@@ -255,11 +255,15 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
         deletedStrokeIdsRef.current.add(strokeId);
         removePersistedStroke(strokeId);
 
-        void deleteRoomStroke(roomId, strokeId).catch((error) => {
-          console.error(
-            error instanceof Error ? error.message : "撤销笔画失败",
-          );
-        });
+        void deleteRoomStroke(roomId, strokeId)
+          .then(() => {
+            window.location.reload();
+          })
+          .catch((error) => {
+            console.error(
+              error instanceof Error ? error.message : "撤销笔画失败",
+            );
+          });
       },
       redo: () => {},
       clear,
