@@ -82,8 +82,14 @@ export function BrushControls() {
                 key={color}
                 value={color}
                 aria-label={color}
-                className="h-8 w-8 min-w-8 rounded-full border border-input p-0"
-                style={{ backgroundColor: color }}
+                className="h-8 w-8 min-w-8 rounded-full border border-input p-0 transition-shadow data-[state=on]:border-transparent"
+                style={{
+                  backgroundColor: color,
+                  boxShadow:
+                    brushSettings.color === color
+                      ? "0 0 0 2px var(--background), 0 0 0 4px var(--ring)"
+                      : undefined,
+                }}
               />
             ))}
           </ToggleGroup>
