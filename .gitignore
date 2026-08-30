@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 *.design.md
+CLAUDE.md
+
+src/pages/room/draw-toolbar-draft.tsx
