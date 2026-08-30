@@ -6,8 +6,16 @@ export const WALL_WIDTH = 2400;
 export const WALL_HEIGHT = 1400;
 export const GRID_SIZE = 100;
 
+type PaintedStroke = {
+  points: WallPoint[];
+  color?: string;
+  size?: number;
+};
+
+type StrokeItem = WallPoint[] | PaintedStroke;
+
 type WallProps = {
-  strokes?: WallPoint[][];
+  strokes?: StrokeItem[];
   liveStrokes?: WallPoint[][];
   currentStroke?: WallPoint[];
   onPointerDown?: PointerEventHandler<HTMLCanvasElement>;
@@ -15,6 +23,8 @@ type WallProps = {
   onPointerUp?: PointerEventHandler<HTMLCanvasElement>;
   onPointerLeave?: PointerEventHandler<HTMLCanvasElement>;
   onPointerCancel?: PointerEventHandler<HTMLCanvasElement>;
+  strokeColor?: string;
+  brush?: StrokeOptions;
 };
 
 export function Wall({
@@ -26,6 +36,8 @@ export function Wall({
   onPointerUp,
   onPointerLeave,
   onPointerCancel,
+  strokeColor = "#111827",
+  brush = DEFAULT_BRUSH,
 }: WallProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -63,8 +75,11 @@ export function Wall({
       strokes,
       liveStrokes,
       currentStroke,
+      "#f8fafc",
+      strokeColor,
+      brush,
     );
-  }, [strokes, liveStrokes, currentStroke]);
+  }, [strokes, liveStrokes, currentStroke, strokeColor, brush]);
 
   return (
     <canvas
@@ -83,7 +98,7 @@ export function redrawWall(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  strokes: WallPoint[][],
+  strokes: StrokeItem[],
   liveStrokes: WallPoint[][] = [],
   currentStroke: WallPoint[] = [],
   background = "#f8fafc",
@@ -95,7 +110,18 @@ export function redrawWall(
   ctx.fillRect(0, 0, width, height);
 
   for (const stroke of strokes) {
-    drawStroke(ctx, stroke, color, brush);
+    const resolved = Array.isArray(stroke)
+      ? { points: stroke, color, brush }
+      : {
+          points: stroke.points,
+          color: stroke.color ?? color,
+          brush:
+            typeof stroke.size === "number"
+              ? { ...brush, size: stroke.size }
+              : brush,
+        };
+
+    drawStroke(ctx, resolved.points, resolved.color, resolved.brush);
   }
 
   for (const liveStroke of liveStrokes) {

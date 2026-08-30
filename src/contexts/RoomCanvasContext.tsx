@@ -4,9 +4,15 @@ import {
   useContext,
   useMemo,
   useState,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
 } from "react";
-import type { DrawTool } from "@/utils/draw-tools";
+import {
+  DEFAULT_BRUSH_SETTINGS,
+  type BrushSettings,
+  type DrawTool,
+} from "@/utils/draw-tools";
 
 export type RoomCanvasActions = {
   undo: () => void;
@@ -19,6 +25,8 @@ type RoomCanvasContextValue = {
   setActiveTool: (tool: DrawTool) => void;
   canvasActions: RoomCanvasActions | null;
   registerCanvasActions: (actions: RoomCanvasActions | null) => void;
+  brushSettings: BrushSettings;
+  setBrushSettings: Dispatch<SetStateAction<BrushSettings>>;
 };
 
 const RoomCanvasContext = createContext<RoomCanvasContextValue | null>(null);
@@ -27,6 +35,9 @@ export function RoomCanvasProvider({ children }: { children: ReactNode }) {
   const [activeTool, setActiveTool] = useState<DrawTool>("pen");
   const [canvasActions, setCanvasActions] = useState<RoomCanvasActions | null>(
     null,
+  );
+  const [brushSettings, setBrushSettings] = useState<BrushSettings>(
+    DEFAULT_BRUSH_SETTINGS,
   );
 
   const registerCanvasActions = useCallback(
@@ -40,10 +51,12 @@ export function RoomCanvasProvider({ children }: { children: ReactNode }) {
     () => ({
       activeTool,
       setActiveTool,
+      brushSettings,
+      setBrushSettings,
       canvasActions,
       registerCanvasActions,
     }),
-    [activeTool, canvasActions, registerCanvasActions],
+    [activeTool, brushSettings, canvasActions, registerCanvasActions],
   );
 
   return (

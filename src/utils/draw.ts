@@ -12,21 +12,30 @@ export type RemoteStrokePointPayload = {
   point: WallPoint;
 };
 
+type StrokeLike = WallPoint[] | { points: WallPoint[] };
+
+function getStrokePoints(stroke: StrokeLike) {
+  return Array.isArray(stroke) ? stroke : stroke.points;
+}
+
 export function samePoint(a: WallPoint, b: WallPoint) {
   return (
     a.x === b.x && a.y === b.y && (a.pressure ?? 0.5) === (b.pressure ?? 0.5)
   );
 }
 
-export function sameStroke(a: WallPoint[], b: WallPoint[]) {
-  if (a.length !== b.length) {
+export function sameStroke(a: StrokeLike, b: StrokeLike) {
+  const aPoints = getStrokePoints(a);
+  const bPoints = getStrokePoints(b);
+
+  if (aPoints.length !== bPoints.length) {
     return false;
   }
 
-  return a.every((point, index) => samePoint(point, b[index]!));
+  return aPoints.every((point, index) => samePoint(point, bPoints[index]!));
 }
 
-export function appendStrokeOnce(strokes: WallPoint[][], stroke: WallPoint[]) {
+export function appendStrokeOnce(strokes: StrokeLike[], stroke: StrokeLike) {
   const alreadyExists = strokes.some((item) => sameStroke(item, stroke));
 
   if (alreadyExists) {
