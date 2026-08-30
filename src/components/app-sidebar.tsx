@@ -336,8 +336,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavProjects title="我的学校" projects={schoolItems} />
-        <NavProjects title="我的房间" projects={privateRoomItems} />
         <NavProjects title="其它" projects={otherItems} />
+        <NavProjects title="我的房间" projects={privateRoomItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser
