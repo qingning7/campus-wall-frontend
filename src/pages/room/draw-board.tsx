@@ -28,10 +28,13 @@ type SavedStrokePayload = {
   points: WallPoint[];
 };
 
+type StrokeItem =
+  WallPoint[] | { points: WallPoint[]; color?: string; size?: number };
+
 export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   const { currentUser } = useAuth();
-  const { activeTool, registerCanvasActions } = useRoomCanvas();
-  const [strokes, setStrokes] = useState<WallPoint[][]>([]);
+  const { activeTool, registerCanvasActions, brushSettings } = useRoomCanvas();
+  const [strokes, setStrokes] = useState<StrokeItem[]>([]);
   const [loadingStrokes, setLoadingStrokes] = useState(true);
   const [currentStroke, setCurrentStroke] = useState<WallPoint[]>([]);
   const [remoteLiveStrokes, setRemoteLiveStrokes] = useState<
@@ -98,7 +101,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
         );
       }
 
-      setStrokes((prev) => appendStrokeOnce(prev, stroke.points));
+      setStrokes((prev) => appendStrokeOnce(prev, stroke));
     }
 
     function handleRoomStrokeDeleted(payload: {
@@ -156,7 +159,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
               ownStrokeIdsRef.current.push(stroke.id);
             }
           }
-          setStrokes(data.map((stroke) => stroke.points));
+          setStrokes(data);
         }
       } catch (error) {
         if (!ignore) {
@@ -186,8 +189,8 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
     try {
       const savedStroke = await saveRoomStroke(roomId, {
         strokeId: strokeId ?? undefined,
-        color: WALL_STROKE_COLOR,
-        size: Math.round(DEFAULT_BRUSH.size ?? 14),
+        color: brushSettings.color,
+        size: brushSettings.size,
         points,
       });
 
@@ -330,7 +333,13 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
     setCurrentStroke([]);
 
     if (completedStroke.length >= 2) {
-      setStrokes((prev) => appendStrokeOnce(prev, completedStroke));
+      setStrokes((prev) =>
+        appendStrokeOnce(prev, {
+          points: completedStroke,
+          color: brushSettings.color,
+          size: brushSettings.size,
+        }),
+      );
       void persistStroke(completedStrokeId, completedStroke);
     }
 
@@ -356,6 +365,8 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
             strokes={strokes}
             liveStrokes={remoteLiveStrokes.map((stroke) => stroke.points)}
             currentStroke={currentStroke}
+            strokeColor={brushSettings.color}
+            brush={{ ...DEFAULT_BRUSH, size: brushSettings.size }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={finishStroke}

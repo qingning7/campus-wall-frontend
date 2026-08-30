@@ -11,6 +11,7 @@ import {
   RoomCanvasProvider,
   useRoomCanvas,
 } from "@/contexts/RoomCanvasContext";
+import { BrushControls } from "@/components/brush-controls";
 
 export function Workspace() {
   return (
@@ -31,16 +32,7 @@ function WorkspaceShell() {
         <header className="flex h-14 shrink-0 items-center border-b px-4">
           <SidebarTrigger />
           <div className="ml-4 flex items-center gap-1">
-            <Button
-              type="button"
-              variant={activeTool === "pen" ? "secondary" : "ghost"}
-              size="icon-sm"
-              aria-label="画笔"
-              aria-pressed={activeTool === "pen"}
-              onClick={() => setActiveTool("pen")}
-            >
-              <PenLineIcon />
-            </Button>
+            <BrushControls />
             <Button
               type="button"
               variant={activeTool === "eraser" ? "secondary" : "ghost"}
