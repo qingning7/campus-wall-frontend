@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { getRoomStrokes, saveRoomStroke, deleteRoomStroke } from "@/api/rooms";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSocket } from "@/lib/socket";
@@ -13,8 +13,6 @@ import {
   upsertRemoteLiveStroke,
 } from "@/utils/draw";
 import { useRoomCanvas } from "@/contexts/RoomCanvasContext";
-
-const WALL_STROKE_COLOR = "#111827";
 
 type DrawBoardProps = {
   roomId?: string;
@@ -47,6 +45,46 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   const ownStrokeIdsRef = useRef<string[]>([]);
   const strokePointsByIdRef = useRef(new Map<string, WallPoint[]>());
   const deletedStrokeIdsRef = useRef(new Set<string>());
+
+  const reloadBoard = useCallback(async () => {
+    if (!roomId || !hasRoomAccess || !currentUser) {
+      setLoadingStrokes(false);
+      setStrokes([]);
+      setRemoteLiveStrokes([]);
+      setCurrentStroke([]);
+      finishedStrokeIdsRef.current.clear();
+      return;
+    }
+
+    const currentUserId = currentUser.id;
+
+    setLoadingStrokes(true);
+    setStrokes([]);
+    setRemoteLiveStrokes([]);
+    setCurrentStroke([]);
+    finishedStrokeIdsRef.current.clear();
+
+    try {
+      const data = await getRoomStrokes(roomId);
+
+      strokePointsByIdRef.current.clear();
+      ownStrokeIdsRef.current = [];
+
+      for (const stroke of data) {
+        strokePointsByIdRef.current.set(stroke.id, stroke.points);
+
+        if (stroke.authorId === currentUserId) {
+          ownStrokeIdsRef.current.push(stroke.id);
+        }
+      }
+
+      setStrokes(data);
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : "加载涂鸦失败");
+    } finally {
+      setLoadingStrokes(false);
+    }
+  }, [roomId, hasRoomAccess, currentUser]);
 
   useEffect(() => {
     if (!roomId || !hasRoomAccess || !currentUser) {
@@ -130,56 +168,8 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   }, [roomId, hasRoomAccess, currentUser]);
 
   useEffect(() => {
-    if (!roomId || !hasRoomAccess || !currentUser) {
-      return;
-    }
-    const currentUserId = currentUser.id;
-
-    let ignore = false;
-    const nextRoomId = roomId;
-
-    setLoadingStrokes(true);
-    setStrokes([]);
-    setRemoteLiveStrokes([]);
-    setCurrentStroke([]);
-    finishedStrokeIdsRef.current.clear();
-
-    async function loadStrokes() {
-      try {
-        const data = await getRoomStrokes(nextRoomId);
-
-        if (!ignore) {
-          strokePointsByIdRef.current.clear();
-          ownStrokeIdsRef.current = [];
-
-          for (const stroke of data) {
-            strokePointsByIdRef.current.set(stroke.id, stroke.points);
-
-            if (stroke.authorId === currentUserId) {
-              ownStrokeIdsRef.current.push(stroke.id);
-            }
-          }
-          setStrokes(data);
-        }
-      } catch (error) {
-        if (!ignore) {
-          console.error(
-            error instanceof Error ? error.message : "加载涂鸦失败",
-          );
-        }
-      } finally {
-        if (!ignore) {
-          setLoadingStrokes(false);
-        }
-      }
-    }
-
-    void loadStrokes();
-
-    return () => {
-      ignore = true;
-    };
-  }, [roomId, hasRoomAccess, currentUser]);
+    void reloadBoard();
+  }, [reloadBoard]);
 
   async function persistStroke(strokeId: string | null, points: WallPoint[]) {
     if (!roomId || points.length < 2) {
@@ -260,7 +250,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
 
         void deleteRoomStroke(roomId, strokeId)
           .then(() => {
-            window.location.reload();
+            void reloadBoard();
           })
           .catch((error) => {
             console.error(
