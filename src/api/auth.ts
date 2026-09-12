@@ -38,7 +38,6 @@ export type RegisterInput = {
 
 export type SendEmailCodeResult = {
   message: string;
-  devCode: string;
 };
 
 export type LoginResult = {

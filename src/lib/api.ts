@@ -30,12 +30,21 @@ export function saveAuthToken(token: string) {
 export function clearAuthToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
-
+/*
+调用 apiRequest
+  -> 拼接 URL
+  -> 设置 JSON 请求头
+  -> 添加 JWT
+  -> fetch 发请求
+  -> 解析后端 JSON
+  -> 检查 HTTP/业务状态
+  -> 成功返回 data，失败抛 Error
+*/
 export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
 ) {
-  const { body, auth = false, headers, ...fetchOptions } = options;
+  const { body, auth = false, headers, ...fetchOptions } = options; // 取出部分字段，剩下的放入 fetchOptions
   const requestHeaders = new Headers(headers);
 
   if (body !== undefined) {

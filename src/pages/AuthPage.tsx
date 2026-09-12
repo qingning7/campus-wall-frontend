@@ -58,7 +58,7 @@ export function AuthPage() {
 
     try {
       const result = await sendEmailCode(normalizedEmail);
-      setNotice(`验证码已发送，验证码为：${result.devCode}`);
+      setNotice(result.message);
     } catch (error) {
       setError(error instanceof Error ? error.message : "发送验证码失败");
     } finally {
