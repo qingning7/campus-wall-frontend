@@ -20,6 +20,7 @@ import {
   BadgeCheckIcon,
   CreditCardIcon,
   BellIcon,
+  SettingsIcon,
   LogOutIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -67,6 +68,7 @@ export function NavUser({
             align="end"
             sideOffset={4}
           >
+            {/*
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
@@ -103,6 +105,15 @@ export function NavUser({
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            */}
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
+                <SettingsIcon />
+                Settings
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOutIcon />

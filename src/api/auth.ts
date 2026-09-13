@@ -45,6 +45,28 @@ export type LoginResult = {
   user: AuthUser;
 };
 
+export type ChangePasswordInput = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type ChangePasswordResult = {
+  message: string;
+};
+
+export type SendPasswordResetCodeResult = {
+  message: string;
+};
+
+export type ResetPasswordInput = {
+  emailCode: string;
+  newPassword: string;
+};
+
+export type ResetPasswordResult = {
+  message: string;
+};
+
 export async function login(input: LoginInput) {
   const result = await apiRequest<LoginResult>("/api/auth/login", {
     method: "POST",
@@ -90,4 +112,30 @@ export async function bindMySchool(schoolId: string) {
 
 export function logout() {
   clearAuthToken();
+}
+
+export async function changePassword(input: ChangePasswordInput) {
+  return apiRequest<ChangePasswordResult>("/api/auth/me/password", {
+    method: "PATCH",
+    auth: true,
+    body: input,
+  });
+}
+
+export async function sendPasswordResetCode() {
+  return apiRequest<SendPasswordResetCodeResult>(
+    "/api/auth/me/password/email-code",
+    {
+      method: "POST",
+      auth: true,
+    },
+  );
+}
+
+export async function resetPasswordByEmail(input: ResetPasswordInput) {
+  return apiRequest<ResetPasswordResult>("/api/auth/me/password/reset", {
+    method: "PATCH",
+    auth: true,
+    body: input,
+  });
 }

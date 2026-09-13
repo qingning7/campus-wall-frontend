@@ -5,6 +5,7 @@ import { SchoolPage } from "./pages/SchoolPage";
 import { RoomPage } from "./pages/RoomPage";
 import { ProtectedRoute, PublicOnlyRoute } from "./routes/Auth";
 import { Workspace } from "./routes/Workspace";
+import { SettingsPage } from "./pages/SettingsPage";
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +36,10 @@ export const router = createBrowserRouter([
       {
         path: "/school",
         element: <SchoolPage />,
+      },
+      {
+        path: "/settings",
+        element: <SettingsPage />,
       },
     ],
   },
