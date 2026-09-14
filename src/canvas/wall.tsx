@@ -1,6 +1,8 @@
 import { useEffect, useRef, type PointerEventHandler } from "react";
 import { DEFAULT_BRUSH, drawStroke, type WallPoint } from "./stroke";
+import { DEFAULT_CHALK_COLOR, getDisplayChalkColor } from "./theme";
 import type { StrokeOptions } from "perfect-freehand";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export const WALL_WIDTH = 2400;
 export const WALL_HEIGHT = 1400;
@@ -36,10 +38,11 @@ export function Wall({
   onPointerUp,
   onPointerLeave,
   onPointerCancel,
-  strokeColor = "#111827",
+  strokeColor = DEFAULT_CHALK_COLOR,
   brush = DEFAULT_BRUSH,
 }: WallProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -57,8 +60,6 @@ export function Wall({
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, WALL_WIDTH, WALL_HEIGHT);
-    ctx.fillStyle = "#f8fafc";
-    ctx.fillRect(0, 0, WALL_WIDTH, WALL_HEIGHT);
   }, []);
 
   useEffect(() => {
@@ -75,11 +76,12 @@ export function Wall({
       strokes,
       liveStrokes,
       currentStroke,
-      "#f8fafc",
-      strokeColor,
+      null,
+      getDisplayChalkColor(strokeColor, theme),
       brush,
+      theme,
     );
-  }, [strokes, liveStrokes, currentStroke, strokeColor, brush]);
+  }, [strokes, liveStrokes, currentStroke, strokeColor, brush, theme]);
 
   return (
     <canvas
@@ -101,13 +103,16 @@ export function redrawWall(
   strokes: StrokeItem[],
   liveStrokes: WallPoint[][] = [],
   currentStroke: WallPoint[] = [],
-  background = "#f8fafc",
-  color = "#111827",
+  background: string | null = null,
+  color: string = DEFAULT_CHALK_COLOR,
   brush: StrokeOptions = DEFAULT_BRUSH,
+  theme: "light" | "dark" = "dark",
 ) {
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = background;
-  ctx.fillRect(0, 0, width, height);
+  if (background) {
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, width, height);
+  }
 
   for (const stroke of strokes) {
     const resolved = Array.isArray(stroke)
@@ -121,7 +126,12 @@ export function redrawWall(
               : brush,
         };
 
-    drawStroke(ctx, resolved.points, resolved.color, resolved.brush);
+    drawStroke(
+      ctx,
+      resolved.points,
+      getDisplayChalkColor(resolved.color, theme),
+      resolved.brush,
+    );
   }
 
   for (const liveStroke of liveStrokes) {

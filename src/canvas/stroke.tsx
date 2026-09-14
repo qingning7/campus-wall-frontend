@@ -1,4 +1,5 @@
 import { getStroke, type StrokeOptions } from "perfect-freehand";
+import { DEFAULT_CHALK_COLOR } from "./theme";
 
 export type WallPoint = {
   x: number;
@@ -30,7 +31,7 @@ export function outlineToPath(outline: Array<[number, number]>) {
 export function drawStroke(
   ctx: CanvasRenderingContext2D,
   points: WallPoint[],
-  color = "#111827",
+  color: string = DEFAULT_CHALK_COLOR,
   options: StrokeOptions = DEFAULT_BRUSH,
 ) {
   const outline = getStrokeOutline(points, options);

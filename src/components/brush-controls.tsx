@@ -1,5 +1,6 @@
 import { PenLineIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getDisplayChalkColor } from "@/canvas/theme";
 import {
   Popover,
   PopoverContent,
@@ -10,16 +11,19 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useRoomCanvas } from "@/contexts/RoomCanvasContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
-  BRUSH_COLORS,
   BRUSH_SIZE_MAX,
   BRUSH_SIZE_MIN,
   BRUSH_SIZE_STEP,
+  getBrushColors,
 } from "@/utils/draw-tools";
 
 export function BrushControls() {
   const { activeTool, setActiveTool, brushSettings, setBrushSettings } =
     useRoomCanvas();
+  const { theme } = useTheme();
+  const brushColors = getBrushColors();
 
   return (
     <Popover>
@@ -77,14 +81,14 @@ export function BrushControls() {
             }}
             className="flex flex-wrap gap-2"
           >
-            {BRUSH_COLORS.map((color) => (
+            {brushColors.map((color) => (
               <ToggleGroupItem
                 key={color}
                 value={color}
                 aria-label={color}
                 className="h-8 w-8 min-w-8 rounded-full border border-input p-0 transition-shadow data-[state=on]:border-transparent"
-                style={{
-                  backgroundColor: color,
+              style={{
+                  backgroundColor: getDisplayChalkColor(color, theme),
                   boxShadow:
                     brushSettings.color === color
                       ? "0 0 0 2px var(--background), 0 0 0 4px var(--ring)"
