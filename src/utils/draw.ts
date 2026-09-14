@@ -12,7 +12,15 @@ export type RemoteStrokePointPayload = {
   point: WallPoint;
 };
 
-type StrokeLike = WallPoint[] | { points: WallPoint[] };
+export type StrokeLike =
+  | WallPoint[]
+  | {
+      id?: string;
+      strokeId?: string | null;
+      points: WallPoint[];
+      color?: string;
+      size?: number;
+    };
 
 function getStrokePoints(stroke: StrokeLike) {
   return Array.isArray(stroke) ? stroke : stroke.points;
@@ -36,13 +44,25 @@ export function sameStroke(a: StrokeLike, b: StrokeLike) {
 }
 
 export function appendStrokeOnce(strokes: StrokeLike[], stroke: StrokeLike) {
-  const alreadyExists = strokes.some((item) => sameStroke(item, stroke));
+  const index = strokes.findIndex((item) => {
+    if (Array.isArray(item) || Array.isArray(stroke)) return false;
+    return Boolean(
+      (item.id && stroke.id && item.id === stroke.id) ||
+      (item.strokeId && stroke.strokeId && item.strokeId === stroke.strokeId),
+    );
+  });
+  if (index === -1) return [...strokes, stroke];
+  const existing = strokes[index]!;
+  if (Array.isArray(existing) || Array.isArray(stroke)) return strokes;
+  return strokes.map((item, i) =>
+    i === index ? { ...existing, ...stroke } : item,
+  );
+}
 
-  if (alreadyExists) {
-    return strokes;
-  }
-
-  return [...strokes, stroke];
+export function removeStrokeById(strokes: StrokeLike[], id: string) {
+  return strokes.filter(
+    (stroke) => Array.isArray(stroke) || (stroke.id !== id && stroke.strokeId !== id),
+  );
 }
 
 export function upsertRemoteLiveStroke(
