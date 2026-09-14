@@ -1,5 +1,5 @@
 import { DEFAULT_BRUSH } from "@/canvas/stroke";
-import { DEFAULT_CHALK_COLOR, getCanvasTheme } from "@/canvas/theme";
+import { DARK_CHALK_COLORS, DEFAULT_CHALK_COLOR } from "@/canvas/theme";
 
 export type DrawTool = "pen" | "eraser";
 
@@ -14,22 +14,13 @@ export const DEFAULT_BRUSH_SETTINGS: BrushSettings = {
 };
 
 export function getBrushColors() {
-  const {
-    chalkWhite,
-    chalkPink,
-    chalkYellow,
-    chalkBlue,
-    chalkGreen,
-    chalkPurple,
-  } = getCanvasTheme();
-
   return [
-    chalkWhite,
-    chalkPink,
-    chalkYellow,
-    chalkBlue,
-    chalkGreen,
-    chalkPurple,
+    DARK_CHALK_COLORS.chalkWhite,
+    DARK_CHALK_COLORS.chalkPink,
+    DARK_CHALK_COLORS.chalkYellow,
+    DARK_CHALK_COLORS.chalkBlue,
+    DARK_CHALK_COLORS.chalkGreen,
+    DARK_CHALK_COLORS.chalkPurple,
   ];
 }
 

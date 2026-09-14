@@ -1,7 +1,8 @@
 import { useEffect, useRef, type PointerEventHandler } from "react";
 import { DEFAULT_BRUSH, drawStroke, type WallPoint } from "./stroke";
-import { DEFAULT_CHALK_COLOR } from "./theme";
+import { DEFAULT_CHALK_COLOR, getDisplayChalkColor } from "./theme";
 import type { StrokeOptions } from "perfect-freehand";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export const WALL_WIDTH = 2400;
 export const WALL_HEIGHT = 1400;
@@ -41,6 +42,7 @@ export function Wall({
   brush = DEFAULT_BRUSH,
 }: WallProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -75,10 +77,11 @@ export function Wall({
       liveStrokes,
       currentStroke,
       null,
-      strokeColor,
+      getDisplayChalkColor(strokeColor, theme),
       brush,
+      theme,
     );
-  }, [strokes, liveStrokes, currentStroke, strokeColor, brush]);
+  }, [strokes, liveStrokes, currentStroke, strokeColor, brush, theme]);
 
   return (
     <canvas
@@ -103,6 +106,7 @@ export function redrawWall(
   background: string | null = null,
   color: string = DEFAULT_CHALK_COLOR,
   brush: StrokeOptions = DEFAULT_BRUSH,
+  theme: "light" | "dark" = "dark",
 ) {
   ctx.clearRect(0, 0, width, height);
   if (background) {
@@ -122,7 +126,12 @@ export function redrawWall(
               : brush,
         };
 
-    drawStroke(ctx, resolved.points, resolved.color, resolved.brush);
+    drawStroke(
+      ctx,
+      resolved.points,
+      getDisplayChalkColor(resolved.color, theme),
+      resolved.brush,
+    );
   }
 
   for (const liveStroke of liveStrokes) {

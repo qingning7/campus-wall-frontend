@@ -1,4 +1,4 @@
-const FALLBACK_CANVAS_THEME = {
+export const DARK_CHALK_COLORS = {
   wallBackground: "oklch(0.266 0.065 152.934)",
   chalkWhite: "#f8f5e9",
   chalkPink: "#f3a6b7",
@@ -8,32 +8,32 @@ const FALLBACK_CANVAS_THEME = {
   chalkPurple: "#c8b4de",
 } as const;
 
-type CanvasThemeKey = keyof typeof FALLBACK_CANVAS_THEME;
+export const LIGHT_CHALK_COLORS = {
+  wallBackground: "oklch(0.266 0.065 152.934)",
+  chalkWhite: "#34422f",
+  chalkPink: "#9d3f58",
+  chalkYellow: "#8a6517",
+  chalkBlue: "#2b7189",
+  chalkGreen: "#477a42",
+  chalkPurple: "#6d508c",
+} as const;
 
-const CSS_TOKENS: Record<CanvasThemeKey, string> = {
-  wallBackground: "--wall-background",
-  chalkWhite: "--chalk-white",
-  chalkPink: "--chalk-pink",
-  chalkYellow: "--chalk-yellow",
-  chalkBlue: "--chalk-blue",
-  chalkGreen: "--chalk-green",
-  chalkPurple: "--chalk-purple",
-};
+type CanvasThemeKey = keyof typeof DARK_CHALK_COLORS;
 
-export function getCanvasTheme() {
-  if (typeof window === "undefined") {
-    return FALLBACK_CANVAS_THEME;
+export function getDisplayChalkColor(color: string, theme: "light" | "dark") {
+  const colorKey = (Object.keys(DARK_CHALK_COLORS) as CanvasThemeKey[]).find(
+    (key) =>
+      DARK_CHALK_COLORS[key].toLowerCase() === color.toLowerCase() ||
+      LIGHT_CHALK_COLORS[key].toLowerCase() === color.toLowerCase(),
+  );
+
+  if (!colorKey) {
+    return color;
   }
 
-  const styles = window.getComputedStyle(document.documentElement);
-
-  return Object.fromEntries(
-    Object.entries(FALLBACK_CANVAS_THEME).map(([key, fallback]) => [
-      key,
-      styles.getPropertyValue(CSS_TOKENS[key as CanvasThemeKey]).trim() ||
-        fallback,
-    ]),
-  ) as typeof FALLBACK_CANVAS_THEME;
+  return theme === "dark"
+    ? DARK_CHALK_COLORS[colorKey]
+    : LIGHT_CHALK_COLORS[colorKey];
 }
 
-export const DEFAULT_CHALK_COLOR: string = FALLBACK_CANVAS_THEME.chalkWhite;
+export const DEFAULT_CHALK_COLOR: string = DARK_CHALK_COLORS.chalkWhite;

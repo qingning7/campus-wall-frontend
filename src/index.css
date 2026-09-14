@@ -70,12 +70,12 @@
   --sidebar-ring: #789652;
 
   --wall-background: oklch(0.266 0.065 152.934);
-  --chalk-white: #f8f5e9;
-  --chalk-pink: #f3a6b7;
-  --chalk-yellow: #f3cf72;
-  --chalk-blue: #a8d7e8;
-  --chalk-green: #b9d7a8;
-  --chalk-purple: #c8b4de;
+  --chalk-white: #34422f;
+  --chalk-pink: #9d3f58;
+  --chalk-yellow: #8a6517;
+  --chalk-blue: #2b7189;
+  --chalk-green: #477a42;
+  --chalk-purple: #6d508c;
 }
 
 @theme inline {
@@ -160,6 +160,13 @@
   --sidebar-accent-foreground: #f0f5e9;
   --sidebar-border: #3b4b31;
   --sidebar-ring: #a7c478;
+
+  --chalk-white: #f8f5e9;
+  --chalk-pink: #f3a6b7;
+  --chalk-yellow: #f3cf72;
+  --chalk-blue: #a8d7e8;
+  --chalk-green: #b9d7a8;
+  --chalk-purple: #c8b4de;
 }
 
 @layer base {
