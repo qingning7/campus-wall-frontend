@@ -206,18 +206,15 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
       return;
     }
 
-    let removed = false;
+    setStrokes((prev) => {
+      const index = prev.findIndex((stroke) => sameStroke(stroke, points));
 
-    setStrokes((prev) =>
-      prev.filter((stroke) => {
-        if (!removed && sameStroke(stroke, points)) {
-          removed = true;
-          return false;
-        }
+      if (index === -1) {
+        return prev;
+      }
 
-        return true;
-      }),
-    );
+      return [...prev.slice(0, index), ...prev.slice(index + 1)];
+    });
   }
 
   useEffect(() => {
@@ -248,11 +245,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
         deletedStrokeIdsRef.current.add(strokeId);
         removePersistedStroke(strokeId);
 
-        void deleteRoomStroke(roomId, strokeId)
-          .then(() => {
-            void reloadBoard();
-          })
-          .catch((error) => {
+        void deleteRoomStroke(roomId, strokeId).catch((error) => {
             console.error(
               error instanceof Error ? error.message : "撤销笔画失败",
             );
