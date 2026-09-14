@@ -1,4 +1,5 @@
 import { DEFAULT_BRUSH } from "@/canvas/stroke";
+import { DEFAULT_CHALK_COLOR, getCanvasTheme } from "@/canvas/theme";
 
 export type DrawTool = "pen" | "eraser";
 
@@ -8,19 +9,29 @@ export type BrushSettings = {
 };
 
 export const DEFAULT_BRUSH_SETTINGS: BrushSettings = {
-  color: "#111827",
+  color: DEFAULT_CHALK_COLOR,
   size: Math.round(DEFAULT_BRUSH.size ?? 14),
 };
 
-export const BRUSH_COLORS = [
-  "#111827",
-  "#dc2626",
-  "#2563eb",
-  "#16a34a",
-  "#f59e0b",
-  "#9333ea",
-  "#ffffff",
-] as const;
+export function getBrushColors() {
+  const {
+    chalkWhite,
+    chalkPink,
+    chalkYellow,
+    chalkBlue,
+    chalkGreen,
+    chalkPurple,
+  } = getCanvasTheme();
+
+  return [
+    chalkWhite,
+    chalkPink,
+    chalkYellow,
+    chalkBlue,
+    chalkGreen,
+    chalkPurple,
+  ];
+}
 
 export const BRUSH_SIZE_MIN = 2;
 export const BRUSH_SIZE_MAX = 40;

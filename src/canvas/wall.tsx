@@ -1,5 +1,6 @@
 import { useEffect, useRef, type PointerEventHandler } from "react";
 import { DEFAULT_BRUSH, drawStroke, type WallPoint } from "./stroke";
+import { DEFAULT_CHALK_COLOR } from "./theme";
 import type { StrokeOptions } from "perfect-freehand";
 
 export const WALL_WIDTH = 2400;
@@ -36,7 +37,7 @@ export function Wall({
   onPointerUp,
   onPointerLeave,
   onPointerCancel,
-  strokeColor = "#111827",
+  strokeColor = DEFAULT_CHALK_COLOR,
   brush = DEFAULT_BRUSH,
 }: WallProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -57,8 +58,6 @@ export function Wall({
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, WALL_WIDTH, WALL_HEIGHT);
-    ctx.fillStyle = "#f8fafc";
-    ctx.fillRect(0, 0, WALL_WIDTH, WALL_HEIGHT);
   }, []);
 
   useEffect(() => {
@@ -75,7 +74,7 @@ export function Wall({
       strokes,
       liveStrokes,
       currentStroke,
-      "#f8fafc",
+      null,
       strokeColor,
       brush,
     );
@@ -101,13 +100,15 @@ export function redrawWall(
   strokes: StrokeItem[],
   liveStrokes: WallPoint[][] = [],
   currentStroke: WallPoint[] = [],
-  background = "#f8fafc",
-  color = "#111827",
+  background: string | null = null,
+  color: string = DEFAULT_CHALK_COLOR,
   brush: StrokeOptions = DEFAULT_BRUSH,
 ) {
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = background;
-  ctx.fillRect(0, 0, width, height);
+  if (background) {
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, width, height);
+  }
 
   for (const stroke of strokes) {
     const resolved = Array.isArray(stroke)

@@ -11,15 +11,16 @@ import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useRoomCanvas } from "@/contexts/RoomCanvasContext";
 import {
-  BRUSH_COLORS,
   BRUSH_SIZE_MAX,
   BRUSH_SIZE_MIN,
   BRUSH_SIZE_STEP,
+  getBrushColors,
 } from "@/utils/draw-tools";
 
 export function BrushControls() {
   const { activeTool, setActiveTool, brushSettings, setBrushSettings } =
     useRoomCanvas();
+  const brushColors = getBrushColors();
 
   return (
     <Popover>
@@ -77,7 +78,7 @@ export function BrushControls() {
             }}
             className="flex flex-wrap gap-2"
           >
-            {BRUSH_COLORS.map((color) => (
+            {brushColors.map((color) => (
               <ToggleGroupItem
                 key={color}
                 value={color}
