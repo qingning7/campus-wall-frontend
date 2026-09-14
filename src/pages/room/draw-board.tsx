@@ -7,7 +7,8 @@ import { DEFAULT_BRUSH, type WallPoint } from "@/canvas/stroke";
 import {
   appendStrokeOnce,
   removeRemoteLiveStrokeByAuthorAndPoints,
-  sameStroke,
+  removeStrokeById,
+  type StrokeLike,
   type RemoteLiveStroke,
   type RemoteStrokePointPayload,
   upsertRemoteLiveStroke,
@@ -26,13 +27,10 @@ type SavedStrokePayload = {
   points: WallPoint[];
 };
 
-type StrokeItem =
-  WallPoint[] | { points: WallPoint[]; color?: string; size?: number };
-
 export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   const { currentUser } = useAuth();
   const { activeTool, registerCanvasActions, brushSettings } = useRoomCanvas();
-  const [strokes, setStrokes] = useState<StrokeItem[]>([]);
+  const [strokes, setStrokes] = useState<StrokeLike[]>([]);
   const [loadingStrokes, setLoadingStrokes] = useState(true);
   const [currentStroke, setCurrentStroke] = useState<WallPoint[]>([]);
   const [remoteLiveStrokes, setRemoteLiveStrokes] = useState<
@@ -43,7 +41,6 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   const activeStrokeIdRef = useRef<string | null>(null);
   const finishedStrokeIdsRef = useRef(new Set<string>());
   const ownStrokeIdsRef = useRef<string[]>([]);
-  const strokePointsByIdRef = useRef(new Map<string, WallPoint[]>());
   const deletedStrokeIdsRef = useRef(new Set<string>());
 
   const reloadBoard = useCallback(async () => {
@@ -67,11 +64,9 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
     try {
       const data = await getRoomStrokes(roomId);
 
-      strokePointsByIdRef.current.clear();
       ownStrokeIdsRef.current = [];
 
       for (const stroke of data) {
-        strokePointsByIdRef.current.set(stroke.id, stroke.points);
 
         if (stroke.authorId === currentUserId) {
           ownStrokeIdsRef.current.push(stroke.id);
@@ -122,9 +117,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
         return;
       }
 
-      strokePointsByIdRef.current.set(stroke.id, stroke.points);
       if (stroke.strokeId) {
-        strokePointsByIdRef.current.set(stroke.strokeId, stroke.points);
         finishedStrokeIdsRef.current.add(stroke.strokeId);
         setRemoteLiveStrokes((prev) =>
           prev.filter((item) => item.strokeId !== stroke.strokeId),
@@ -184,7 +177,12 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
         points,
       });
 
-      strokePointsByIdRef.current.set(savedStroke.id, points);
+      if (
+        deletedStrokeIdsRef.current.has(savedStroke.id) ||
+        (strokeId && deletedStrokeIdsRef.current.has(strokeId))
+      ) return;
+
+      setStrokes((prev) => appendStrokeOnce(prev, { ...savedStroke, strokeId }));
 
       if (!ownStrokeIdsRef.current.includes(savedStroke.id)) {
         ownStrokeIdsRef.current.push(savedStroke.id);
@@ -195,26 +193,11 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   }
 
   function removePersistedStroke(strokeId: string) {
-    const points = strokePointsByIdRef.current.get(strokeId);
-
-    strokePointsByIdRef.current.delete(strokeId);
     ownStrokeIdsRef.current = ownStrokeIdsRef.current.filter(
       (id) => id !== strokeId,
     );
 
-    if (!points) {
-      return;
-    }
-
-    setStrokes((prev) => {
-      const index = prev.findIndex((stroke) => sameStroke(stroke, points));
-
-      if (index === -1) {
-        return prev;
-      }
-
-      return [...prev.slice(0, index), ...prev.slice(index + 1)];
-    });
+    setStrokes((prev) => removeStrokeById(prev, strokeId));
   }
 
   useEffect(() => {
@@ -318,6 +301,7 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
     if (completedStroke.length >= 2) {
       setStrokes((prev) =>
         appendStrokeOnce(prev, {
+          strokeId: completedStrokeId,
           points: completedStroke,
           color: brushSettings.color,
           size: brushSettings.size,
