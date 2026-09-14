@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PanelRightIcon } from "lucide-react";
+import { PanelRightIcon, SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getRoomMessages,
@@ -200,8 +200,13 @@ export function RoomChat({ roomId, hasRoomAccess }: RoomChatProps) {
                 className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder="输入消息"
               />
-              <Button type="submit" size="icon-sm">
-                发送
+              <Button
+                type="submit"
+                size="icon-sm"
+                className="rounded-lg"
+                aria-label="发送消息"
+              >
+                <SendIcon className="size-4" />
               </Button>
             </div>
           </form>
