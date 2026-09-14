@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
 import { login, register, sendEmailCode } from "../api/auth";
 import { useAuth } from "../contexts/AuthContext.tsx";
+import { resetSocket } from "@/lib/socket";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -90,6 +91,7 @@ export function AuthPage() {
         password,
       });
 
+      resetSocket();
       await refreshUser();
 
       navigate(isRegister ? "/school" : "/", {

@@ -8,6 +8,7 @@ import {
 } from "react";
 import { getMe, logout, type AuthUser } from "../api/auth";
 import { getAuthToken } from "../lib/api";
+import { resetSocket } from "../lib/socket";
 
 type AuthContextValue = {
   currentUser: AuthUser | null;
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCurrentUser(user);
       return user;
     } catch {
+      resetSocket();
       logout();
       setCurrentUser(null);
       return null;
@@ -49,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   function logoutAndClear() {
+    resetSocket();
     logout();
     setCurrentUser(null);
   }
