@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
+const SCHOOL_PAGE_SIZE = 9;
+
 export function SchoolPage() {
   const navigate = useNavigate();
   const { currentUser, setCurrentUser } = useAuth();
@@ -33,6 +35,8 @@ export function SchoolPage() {
   const [pendingSchool, setPendingSchool] = useState<School | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [visibleSchoolCount, setVisibleSchoolCount] =
+    useState(SCHOOL_PAGE_SIZE);
 
   useEffect(() => {
     async function loadSchools() {
@@ -59,14 +63,6 @@ export function SchoolPage() {
     return () => clearInterval(timer);
   }, [confirmOpen, countdown]);
 
-  if (!currentUser) {
-    return null;
-  }
-
-  if (currentUser.schoolId) {
-    return <Navigate to="/" replace />;
-  }
-
   function closeConfirmDialog() {
     setConfirmOpen(false);
     setPendingSchool(null);
@@ -81,11 +77,35 @@ export function SchoolPage() {
 
   const keyword = search.trim().toLowerCase();
 
-  const filteredSchools = keyword
-    ? schools
-        .filter((school) => school.name.toLowerCase().includes(keyword))
-        .slice(0, 9)
+  const matchedSchools = keyword
+    ? schools.filter((school) => school.name.toLowerCase().includes(keyword))
     : [];
+  const visibleSchools = matchedSchools.slice(0, visibleSchoolCount);
+
+  useEffect(() => {
+    setVisibleSchoolCount(SCHOOL_PAGE_SIZE);
+  }, [keyword]);
+
+  function handleSchoolListScroll(event: React.UIEvent<HTMLDivElement>) {
+    const list = event.currentTarget;
+    const distanceToBottom = list.scrollHeight - list.scrollTop - list.clientHeight;
+
+    if (distanceToBottom > 24) {
+      return;
+    }
+
+    setVisibleSchoolCount((currentCount) =>
+      Math.min(currentCount + SCHOOL_PAGE_SIZE, matchedSchools.length),
+    );
+  }
+
+  if (!currentUser) {
+    return null;
+  }
+
+  if (currentUser.schoolId) {
+    return <Navigate to="/" replace />;
+  }
 
   async function handleSelectSchool(schoolId: string) {
     setError("");
@@ -135,13 +155,16 @@ export function SchoolPage() {
                 />
 
                 {shouldShowList && (
-                  <CommandList className="absolute top-full left-0 right-0 z-20 mt-3 max-h-72 overflow-y-auto rounded-2xl border border-border bg-card shadow-lg">
+                  <CommandList
+                    className="absolute top-full left-0 right-0 z-20 mt-3 max-h-72 overflow-y-auto rounded-2xl border border-border bg-card shadow-lg"
+                    onScroll={handleSchoolListScroll}
+                  >
                     {loading ? (
                       <div className="px-4 py-3 text-sm text-muted-foreground">
                         加载中...
                       </div>
-                    ) : filteredSchools.length ? (
-                      filteredSchools.map((school) => (
+                    ) : visibleSchools.length ? (
+                      visibleSchools.map((school) => (
                         <CommandItem
                           key={school.id}
                           value={school.name}
@@ -160,6 +183,11 @@ export function SchoolPage() {
                     ) : (
                       <div className="px-4 py-3 text-sm text-muted-foreground">
                         未找到匹配的学校
+                      </div>
+                    )}
+                    {visibleSchools.length < matchedSchools.length && (
+                      <div className="px-4 py-2 text-center text-xs text-muted-foreground">
+                        正在加载...
                       </div>
                     )}
                   </CommandList>
