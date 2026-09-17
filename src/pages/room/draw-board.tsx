@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getRoomStrokes, saveRoomStroke, deleteRoomStroke } from "@/api/rooms";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSocket } from "@/lib/socket";
@@ -42,44 +42,6 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   const finishedStrokeIdsRef = useRef(new Set<string>());
   const ownStrokeIdsRef = useRef<string[]>([]);
   const deletedStrokeIdsRef = useRef(new Set<string>());
-
-  const reloadBoard = useCallback(async () => {
-    if (!roomId || !hasRoomAccess || !currentUser) {
-      setLoadingStrokes(false);
-      setStrokes([]);
-      setRemoteLiveStrokes([]);
-      setCurrentStroke([]);
-      finishedStrokeIdsRef.current.clear();
-      return;
-    }
-
-    const currentUserId = currentUser.id;
-
-    setLoadingStrokes(true);
-    setStrokes([]);
-    setRemoteLiveStrokes([]);
-    setCurrentStroke([]);
-    finishedStrokeIdsRef.current.clear();
-
-    try {
-      const data = await getRoomStrokes(roomId);
-
-      ownStrokeIdsRef.current = [];
-
-      for (const stroke of data) {
-
-        if (stroke.authorId === currentUserId) {
-          ownStrokeIdsRef.current.push(stroke.id);
-        }
-      }
-
-      setStrokes(data);
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : "加载涂鸦失败");
-    } finally {
-      setLoadingStrokes(false);
-    }
-  }, [roomId, hasRoomAccess, currentUser]);
 
   useEffect(() => {
     if (!roomId || !hasRoomAccess || !currentUser) {
@@ -161,8 +123,45 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
   }, [roomId, hasRoomAccess, currentUser]);
 
   useEffect(() => {
+    async function reloadBoard() {
+      if (!roomId || !hasRoomAccess || !currentUser) {
+        setLoadingStrokes(false);
+        setStrokes([]);
+        setRemoteLiveStrokes([]);
+        setCurrentStroke([]);
+        finishedStrokeIdsRef.current.clear();
+        return;
+      }
+
+      const currentUserId = currentUser.id;
+
+      setLoadingStrokes(true);
+      setStrokes([]);
+      setRemoteLiveStrokes([]);
+      setCurrentStroke([]);
+      finishedStrokeIdsRef.current.clear();
+
+      try {
+        const data = await getRoomStrokes(roomId);
+
+        ownStrokeIdsRef.current = [];
+
+        for (const stroke of data) {
+          if (stroke.authorId === currentUserId) {
+            ownStrokeIdsRef.current.push(stroke.id);
+          }
+        }
+
+        setStrokes(data);
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : "加载涂鸦失败");
+      } finally {
+        setLoadingStrokes(false);
+      }
+    }
+
     void reloadBoard();
-  }, [reloadBoard]);
+  }, [roomId, hasRoomAccess, currentUser]);
 
   async function persistStroke(strokeId: string | null, points: WallPoint[]) {
     if (!roomId || points.length < 2) {
