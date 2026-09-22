@@ -4,7 +4,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -14,15 +13,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  ChevronsUpDownIcon,
-  SparklesIcon,
-  BadgeCheckIcon,
-  CreditCardIcon,
-  BellIcon,
-  SettingsIcon,
-  LogOutIcon,
-} from "lucide-react";
+import { ChevronsUpDownIcon, SettingsIcon, LogOutIcon } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 

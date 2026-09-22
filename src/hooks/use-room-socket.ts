@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { getSocket } from "@/lib/socket";
 
 type UseRoomSocketOptions = {
