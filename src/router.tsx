@@ -1,4 +1,5 @@
 import { Navigate, createBrowserRouter } from "react-router";
+import { lazy, Suspense } from "react";
 import { AuthPage } from "./pages/AuthPage";
 import { HomePage } from "./pages/HomePage";
 import { SchoolPage } from "./pages/SchoolPage";
@@ -6,6 +7,10 @@ import { RoomPage } from "./pages/RoomPage";
 import { ProtectedRoute, PublicOnlyRoute } from "./routes/Auth";
 import { Workspace } from "./routes/Workspace";
 import { SettingsPage } from "./pages/SettingsPage";
+
+const AdminPage = lazy(() =>
+  import("./pages/AdminPage").then((module) => ({ default: module.AdminPage })),
+);
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +45,14 @@ export const router = createBrowserRouter([
       {
         path: "/settings",
         element: <SettingsPage />,
+      },
+      {
+        path: "/admin",
+        element: (
+          <Suspense fallback={<p className="p-6">加载管理页面…</p>}>
+            <AdminPage />
+          </Suspense>
+        ),
       },
     ],
   },

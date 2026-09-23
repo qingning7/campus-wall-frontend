@@ -18,6 +18,15 @@ export function useRoomSocket({ roomId, enabled }: UseRoomSocketOptions) {
       socket.emit("join-room", { roomId });
     }
 
+    function contentChanged(payload: { roomId: string }) {
+      // Reload history after administrative changes, including room deletion.
+      if (payload.roomId === roomId) window.location.reload();
+    }
+    function disconnected(reason: string) {
+      if (reason === "io server disconnect") window.location.reload();
+    }
+    socket.on("room-content-changed", contentChanged);
+    socket.on("disconnect", disconnected);
     socket.on("connect", joinRoom);
 
     if (socket.connected) {
@@ -27,6 +36,8 @@ export function useRoomSocket({ roomId, enabled }: UseRoomSocketOptions) {
     }
 
     return () => {
+      socket.off("room-content-changed", contentChanged);
+      socket.off("disconnect", disconnected);
       socket.off("connect", joinRoom);
       socket.disconnect();
     };

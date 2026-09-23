@@ -28,7 +28,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
-  const { logoutAndClear } = useAuth();
+  const { currentUser, logoutAndClear } = useAuth();
 
   function handleLogout() {
     logoutAndClear();
@@ -99,6 +99,12 @@ export function NavUser({
             <DropdownMenuSeparator />
             */}
             <DropdownMenuGroup>
+              {currentUser?.isAdmin && (
+                <DropdownMenuItem onClick={() => navigate("/admin")}>
+                  <SettingsIcon />
+                  管理端
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => navigate("/settings")}>
                 <SettingsIcon />
                 Settings
