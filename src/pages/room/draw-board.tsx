@@ -146,13 +146,17 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
 
         ownStrokeIdsRef.current = [];
 
-        for (const stroke of data) {
+        const visibleData = data.filter(
+          (stroke) => !deletedStrokeIdsRef.current.has(stroke.id),
+        );
+
+        for (const stroke of visibleData) {
           if (stroke.authorId === currentUserId) {
             ownStrokeIdsRef.current.push(stroke.id);
           }
         }
 
-        setStrokes(data);
+        setStrokes(visibleData);
       } catch (error) {
         console.error(error instanceof Error ? error.message : "加载涂鸦失败");
       } finally {
@@ -179,9 +183,12 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
       if (
         deletedStrokeIdsRef.current.has(savedStroke.id) ||
         (strokeId && deletedStrokeIdsRef.current.has(strokeId))
-      ) return;
+      )
+        return;
 
-      setStrokes((prev) => appendStrokeOnce(prev, { ...savedStroke, strokeId }));
+      setStrokes((prev) =>
+        appendStrokeOnce(prev, { ...savedStroke, strokeId }),
+      );
 
       if (!ownStrokeIdsRef.current.includes(savedStroke.id)) {
         ownStrokeIdsRef.current.push(savedStroke.id);
@@ -228,10 +235,10 @@ export function DrawBoard({ roomId, hasRoomAccess }: DrawBoardProps) {
         removePersistedStroke(strokeId);
 
         void deleteRoomStroke(roomId, strokeId).catch((error) => {
-            console.error(
-              error instanceof Error ? error.message : "撤销笔画失败",
-            );
-          });
+          console.error(
+            error instanceof Error ? error.message : "撤销笔画失败",
+          );
+        });
       },
       redo: () => {},
       clear,

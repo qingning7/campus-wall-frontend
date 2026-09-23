@@ -15,6 +15,7 @@ export type AuthUserSchool = {
 };
 
 export type AuthUser = {
+  isAdmin?: boolean;
   id: string;
   email: string;
   name: string | null;
