@@ -2,12 +2,57 @@ import { useEffect, useState } from "react";
 import { PanelRightIcon, SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   getRoomMessages,
   sendRoomMessage,
   type ChatMessage,
 } from "@/api/rooms";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSocket } from "@/lib/socket";
+
+const messageTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+const fullMessageTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+  timeZoneName: "short",
+});
+
+function MessageTime({ createdAt }: { createdAt: string }) {
+  const timestamp = new Date(createdAt);
+  if (Number.isNaN(timestamp.getTime())) return null;
+
+  const fullTime = fullMessageTimeFormatter.format(timestamp);
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={<time dateTime={createdAt} />}
+        tabIndex={0}
+        aria-label={`发送时间：${fullTime}`}
+        className="shrink-0 rounded-sm text-xs whitespace-nowrap tabular-nums text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {messageTimeFormatter.format(timestamp)}
+      </TooltipTrigger>
+      <TooltipContent>{fullTime}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 function appendMessageOnce(messages: ChatMessage[], message: ChatMessage) {
   if (messages.some((item) => item.id === message.id)) {
@@ -177,16 +222,23 @@ export function RoomChat({ roomId, hasRoomAccess }: RoomChatProps) {
             ) : messageError ? (
               <p className="text-sm text-destructive">{messageError}</p>
             ) : messages.length ? (
-              <div className="space-y-3">
-                {messages.map((message) => (
-                  <div key={message.id} className="space-y-1">
-                    <p className="text-sm font-medium">
-                      {message.author.name ?? "匿名用户"}
-                    </p>
-                    <p className="text-sm text-foreground">{message.content}</p>
-                  </div>
-                ))}
-              </div>
+              <TooltipProvider delay={300}>
+                <div className="space-y-3">
+                  {messages.map((message) => (
+                    <div key={message.id} className="space-y-1">
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <p className="min-w-0 break-all text-sm font-medium">
+                          {message.author.name ?? "匿名用户"}
+                        </p>
+                        <MessageTime createdAt={message.createdAt} />
+                      </div>
+                      <p className="text-sm text-foreground">
+                        {message.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </TooltipProvider>
             ) : (
               <p className="text-sm text-muted-foreground">暂无消息</p>
             )}
